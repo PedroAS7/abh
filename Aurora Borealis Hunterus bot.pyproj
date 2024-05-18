@@ -25,11 +25,13 @@
   <ItemGroup>
     <Compile Include="abh\src\app.py" />
     <Compile Include="abh\src\config.py" />
+    <Compile Include="abh\src\log.py" />
     <Compile Include="main.py" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="abh\" />
     <Folder Include="abh\src\" />
+    <Folder Include="abh\src\cmds\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include=".gitignore" />
