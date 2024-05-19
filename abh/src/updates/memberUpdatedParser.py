@@ -1,4 +1,5 @@
 from abh.src.chat import Chat
+from abh.src.consts import Emojis
 from abh.src.updates.parser import TelegramUpdateParser
 import telegram
 
@@ -26,10 +27,8 @@ class TelegramMemberUpdatedParser(TelegramUpdateParser):
                 new_chat = Chat(update.effective_chat.id, [update.effective_user.id])
                 app.add_chat(new_chat)
                 await bot.send_message(update.effective_chat.id,
-                                       "Hi \U0001F44B! Thanks for adding me! Let one of the admins configure me by @ me, followed by 'setup'")
+                                       f"Hi {Emojis.WAVE.value}! Thanks for adding me! Let one of the admins configure me by typing {bot.name}")
             # end if
-            
-            await update.effective_sender.send_dice()
         # end if
     # end def
 # end class

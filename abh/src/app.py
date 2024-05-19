@@ -45,6 +45,7 @@ class BotApp():
         self._commands: list[BotCommand] = [
             ConfigureMsgCommand()
         ]
+        self.debug_mode: bool = False
     # end def
 
     def has_chat(self, uid: int) -> bool:
@@ -67,9 +68,27 @@ class BotApp():
         self._chats.append(chat)
     # end def
 
+    def get_chat(self, uid: int) -> Chat:
+
+        found_chat = None
+        for chat in self._chats:
+            if chat.uid == uid:
+                found_chat = chat
+                break
+            # end if
+        # end for
+
+        if not found_chat:
+            found_chat = Chat(uid, [])
+            self.add_chat(found_chat)
+        # end if
+
+        return found_chat
+    # end def
+
     def write(self) -> None:
         with open(BotApp._DB_FILENAME, "wb") as db_file:
-            pickle.dump(self, db_file)
+            pickle.dump(self._chats, db_file)
         # end with
     # end def
 
@@ -122,21 +141,22 @@ class BotApp():
 
     @staticmethod
     def read() -> Self:
+        BotApp._APP = BotApp()
+
         # Fresh start
         if not exists(BotApp._DB_FILENAME):
-            BotApp._APP = BotApp()
             return
         # end if
 
-        read_instance = None
+        read_chat_list = None
         with open(BotApp._DB_FILENAME, "rb") as db_file:
-            read_instance = pickle.load(db_file)
-            if not isinstance(read_instance, BotApp):
+            read_chat_list = pickle.load(db_file)
+            if not isinstance(read_chat_list, list):
                 raise ValueError("Invalid bot DB file")
             # end if
         # end with
 
-        BotApp._APP = read_instance
+        BotApp._APP._chats = read_chat_list
     # end def
 # end class
 
@@ -148,7 +168,7 @@ class BotApp():
 async def serve_bot(bot: telegram.Bot) -> None:
 
     bot_me = await bot.get_me()
-    app = BotApp.singleton()
+    app: BotApp = BotApp.singleton()
     next_id = 0
             
     log(f"ID:\t\t\t{bot_me.id}")
@@ -173,8 +193,16 @@ async def serve_bot(bot: telegram.Bot) -> None:
                 await handler.parse(update, app)
             except RuntimeError:
                 warn(f"Received unsupported update of type {update.__class__}")
+
+                if app.debug_mode:
+                    error(format_exc())
+                # end if
             except Exception:
                 warn("Failed to respond to update")
+
+                if app.debug_mode:
+                    error(format_exc())
+                # end if
             # end try
 
             next_id = max(next_id, update.update_id + 1)
@@ -209,7 +237,7 @@ async def serve_forever(cfg: Config) -> None:
 
 def run() -> None:
 
-    log("ABH - Aurora Borealis Hunteurs bot")
+    log("ABH - Aurora Borealis Hunterus bot")
     log("(Also known as C\xe9line.bot)")
     log("")
     indent()
@@ -217,6 +245,7 @@ def run() -> None:
     try:
         BotApp.read()
         cfg = Config.read()
+        BotApp.singleton().debug_mode = cfg[ConfigKeyType.DEBUG_MODE]
         asyncio.run(serve_forever(cfg))
 
     except KeyboardInterrupt:

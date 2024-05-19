@@ -1,10 +1,7 @@
-from uuid import uuid4
 from abh.src.updates.parser import TelegramUpdateParser
-from telegram import InlineQueryResultArticle
-from telegram import InputTextMessageContent
-from telegram.constants import ParseMode
+from abh.src.log            import *
+from traceback              import format_exc
 import telegram
-from html import escape
 import shlex
 
 
@@ -26,7 +23,7 @@ class TelegramInlineResponseParser(TelegramUpdateParser):
         
         try:
             cmd = app.get_command(msg_parts[0])
-            prompt, choices = cmd.get_interactive_choices(msg_parts[1:])
+            prompt, choices, delete_msg = cmd.get_interactive_choices(msg_parts[1:])
 
             if choices:
                 if update.callback_query.message and hasattr(update.callback_query.message, "reply_text"):
@@ -35,10 +32,19 @@ class TelegramInlineResponseParser(TelegramUpdateParser):
                     await update.callback_query.answer("Invalid command")
                 # end if
             else:
-                cmd.run(update, app, msg_parts)
+                await cmd.run(update, app, *msg_parts)
+                await update.callback_query.answer()
             # end if
-        except ValueError as exe:
+
+            if delete_msg and update.callback_query.message:
+                await update.callback_query.message.delete()
+            # end if
+        except ValueError:
             await update.callback_query.answer("Invalid command")
+
+            if app.debug_mode:
+                error(format_exc())
+            # end if
         # end try
     # end def
 # end class

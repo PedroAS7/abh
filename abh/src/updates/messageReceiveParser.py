@@ -1,4 +1,6 @@
 from abh.src.updates.parser import TelegramUpdateParser
+from abh.src.log            import *
+from traceback              import format_exc
 import telegram
 import shlex
 
@@ -25,17 +27,27 @@ class TelegramMessageReceiveParser(TelegramUpdateParser):
             try:
                 cmd = app.get_command(update.message.text)
                 cmd_parts = shlex.split(update.message.text)
-                prompt, choices = cmd.get_interactive_choices(cmd_parts[1:])
+                prompt, choices, delete_msg = cmd.get_interactive_choices(cmd_parts[1:])
 
                 if choices:
-                    await update.message.reply_text(choices, reply_markup=choices)
+                    await update.message.reply_text(prompt, reply_markup=choices)
                 else:
-                    cmd.run(update, app, *cmd_parts)
+                    await cmd.run(update, app, *cmd_parts)
+                # end if
+                
+                if delete_msg:
+                    await update.message.delete()
                 # end if
             except ValueError:
                 await update.message.reply_text("Invalid command!")
+
+                if app.debug_mode:
+                    error(format_exc())
+                # end if
             # end try
+
+        else:
+            await update.message.reply_text(f"Please use the interactive menu by typing {app.bot_user.name}")
         # end if
-        await update.effective_sender.send_dice()
     # end def
 # end class

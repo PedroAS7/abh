@@ -1,5 +1,6 @@
 from abh.src.consts import GeomagStormIndex
 from abh.src.consts import SolarFlareClass
+import telegram
 
 
 #--
@@ -137,8 +138,19 @@ class Chat():
         return uid in self._admins
     # end def
     
-    def update_admins(self, admins: list[int]):
-        self._admins = admins
+    def update_admins(self, admins: tuple):
+        admin_ids = []
+        # Get everyone's ID
+        for admin in admins:
+            # Single user
+            if isinstance(admin, telegram.Chat):
+                user: telegram.User = admin
+            else:
+                user: telegram.User = admin.user
+            # end if
+            admin_ids.append(user.id)
+        # end for
+        self._admins = admin_ids
     # end def
 
     @property

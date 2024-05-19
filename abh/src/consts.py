@@ -1,4 +1,5 @@
 from enum import IntEnum
+from enum import Enum
 
 
 #--
@@ -64,4 +65,16 @@ class GeomagStormIndex(ClassWithHelp, IntEnum):
             GeomagStormIndex.KP9: "Bright at Paris, visible from southern Europe"
         }
     # end def
+# end class
+
+
+class Emojis(Enum):
+    OK          = "\U0001F197"
+    WAVE        = "\U0001F44B"
+    WRENCH      = "\U0001F527"
+    BELL        = "\U0001F514"
+    GLOBE       = "\U0001F310"
+    CLOCK       = "\U0001F551"
+    MILKY_WAY   = "\U0001F30C"
+    GRAPH       = "\U0001F4CA"
 # end class
