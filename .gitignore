@@ -677,3 +677,4 @@ FodyWeavers.xsd
 
 # Additional file for configuration
 cfg.json
+.db

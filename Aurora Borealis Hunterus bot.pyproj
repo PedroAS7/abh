@@ -24,14 +24,29 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="abh\src\app.py" />
+    <Compile Include="abh\src\chat.py" />
+    <Compile Include="abh\src\cmds\botCommand.py" />
+    <Compile Include="abh\src\cmds\msg\configureCommand.py" />
     <Compile Include="abh\src\config.py" />
+    <Compile Include="abh\src\consts.py" />
     <Compile Include="abh\src\log.py" />
+    <Compile Include="abh\src\scrapers\flares.py" />
+    <Compile Include="abh\src\scrapers\geomag.py" />
+    <Compile Include="abh\src\updates\inlineResposeParser.py" />
+    <Compile Include="abh\src\updates\inlineQueryParser.py" />
+    <Compile Include="abh\src\updates\memberUpdatedParser.py" />
+    <Compile Include="abh\src\updates\messageReceiveParser.py" />
+    <Compile Include="abh\src\updates\parser.py" />
     <Compile Include="main.py" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="abh\" />
     <Folder Include="abh\src\" />
     <Folder Include="abh\src\cmds\" />
+    <Folder Include="abh\src\cmds\cli\" />
+    <Folder Include="abh\src\cmds\msg\" />
+    <Folder Include="abh\src\scrapers\" />
+    <Folder Include="abh\src\updates\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include=".gitignore" />
