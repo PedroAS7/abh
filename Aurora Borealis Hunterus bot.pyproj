@@ -27,11 +27,15 @@
     <Compile Include="abh\src\chat.py" />
     <Compile Include="abh\src\cmds\botCommand.py" />
     <Compile Include="abh\src\cmds\msg\configureCommand.py" />
+    <Compile Include="abh\src\cmds\msg\aboutCommand.py" />
+    <Compile Include="abh\src\cmds\msg\statusCommand.py" />
+    <Compile Include="abh\src\cmds\msg\latestInfoCommand.py" />
     <Compile Include="abh\src\config.py" />
     <Compile Include="abh\src\consts.py" />
     <Compile Include="abh\src\log.py" />
     <Compile Include="abh\src\scrapers\flares.py" />
     <Compile Include="abh\src\scrapers\geomag.py" />
+    <Compile Include="abh\src\scrapers\scraper.py" />
     <Compile Include="abh\src\updates\inlineResposeParser.py" />
     <Compile Include="abh\src\updates\inlineQueryParser.py" />
     <Compile Include="abh\src\updates\memberUpdatedParser.py" />
@@ -47,10 +51,11 @@
     <Folder Include="abh\src\cmds\msg\" />
     <Folder Include="abh\src\scrapers\" />
     <Folder Include="abh\src\updates\" />
+    <Folder Include="data\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include=".gitignore" />
-    <Content Include="cfg.json" />
+    <Content Include="data\cfg.json" />
     <Content Include="requirements.txt" />
   </ItemGroup>
   <ItemGroup>

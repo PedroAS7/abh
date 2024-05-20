@@ -1,7 +1,9 @@
 from abh.src.chat import Chat
 from abh.src.cmds.botCommand import BotCommand
-from abh.src.consts import Emojis, SolarFlareClass
+from abh.src.consts import Emojis
+from abh.src.consts import SolarFlareClass
 from abh.src.consts import GeomagStormIndex
+from abh.src.consts import HemisphereChoices
 from abh.src.log import *
 from enum import Enum
 import telegram
@@ -18,18 +20,12 @@ class _SubCmd(Enum):
 # end class
 
 
-class _HemisphereChoices(Enum):
-    NORTH             = "north"
-    SOUTH             = "south"
-    BOTH              = "both"
-# end class
-
-
 class ConfigureMsgCommand(BotCommand):
 
     _CMD_INDEX        = 0
     _SUBCMD_INDEX     = 1
     _ARGS_INDEX       = 2
+    _BUTTONS_PER_LINE = 5
 
     def __init__(self) -> None:
         super().__init__("configure",
@@ -38,7 +34,13 @@ class ConfigureMsgCommand(BotCommand):
                          True)
 
         self.cmd_handlers = {
-            _SubCmd.SEND_UPDATES.value: self._run_send_updates
+            _SubCmd.SEND_UPDATES.value      : self._run_send_updates,
+            _SubCmd.FLARE_CLASS.value       : self._run_set_flare_class,
+            _SubCmd.GEOMAG_INTENSITY.value  : self._run_set_geomag_intensity,
+            _SubCmd.CHOOSE_HEMISPHERE.value : self._run_set_hemisphere,
+            _SubCmd.INCLUDE_DATA.value      : self._run_include_data,
+            _SubCmd.INCLUDE_IMAGES.value    : self._run_include_images,
+            _SubCmd.PREDICT_TIME.value      : self._run_predict_time
             }
     # end def
 
@@ -46,7 +48,7 @@ class ConfigureMsgCommand(BotCommand):
                                 update: telegram.Update,
                                 app: object,
                                 chat: Chat,
-                                *args):
+                                *args) -> None:
         # We're not expecting any args
         if not len(args):
             chat.settings.send_updates = not chat.settings.send_updates
@@ -56,14 +58,119 @@ class ConfigureMsgCommand(BotCommand):
                 case True:
                     await update.effective_message.chat.send_message(f"{Emojis.OK.value} Bot will send updates")
             # end match
-            
         # end if
+    # end def
+
+    async def _run_include_data(self,
+                                update: telegram.Update,
+                                app: object,
+                                chat: Chat,
+                                *args) -> None:
+        # We're not expecting any args
+        if not len(args):
+            chat.settings.include_data = not chat.settings.include_data
+            match chat.settings.include_data:
+                case False:
+                    await update.effective_message.chat.send_message(f"{Emojis.OK.value} Bot will won't include data")
+                case True:
+                    await update.effective_message.chat.send_message(f"{Emojis.OK.value} Bot will include data of the event")
+            # end match
+        # end if
+    # end def
+
+    async def _run_include_images(self,
+                                  update: telegram.Update,
+                                  app: object,
+                                  chat: Chat,
+                                  *args) -> None:
+        # We're not expecting any args
+        if not len(args):
+            chat.settings.include_images = not chat.settings.include_images
+            match chat.settings.include_images:
+                case False:
+                    await update.effective_message.chat.send_message(f"{Emojis.OK.value} Bot won't attach images")
+                case True:
+                    await update.effective_message.chat.send_message(f"{Emojis.OK.value} Bot will attach images to the event messages")
+            # end match
+        # end if
+    # end def
+
+    async def _run_predict_time(self,
+                                update: telegram.Update,
+                                app: object,
+                                chat: Chat,
+                                *args) -> None:
+        # We're not expecting any args
+        if not len(args):
+            chat.settings.predict_time = not chat.settings.predict_time
+            match chat.settings.predict_time:
+                case False:
+                    await update.effective_message.chat.send_message(f"{Emojis.OK.value} Bot won't predict arrival time")
+                case True:
+                    await update.effective_message.chat.send_message(f"{Emojis.OK.value} Bot will try to predict arrival time")
+            # end match
+        # end if
+    # end def
+
+    async def _run_set_flare_class(self,
+                                   update: telegram.Update,
+                                   app: object,
+                                   chat: Chat,
+                                   *args) -> None:
+        try:
+            if len(args) == 0:
+                raise KeyError()
+            # end if
+
+            chosen_class: SolarFlareClass = SolarFlareClass[args[0]]
+            chat.settings.min_flare_class = chosen_class
+            await update.effective_message.chat.send_message(f"{Emojis.OK.value} Flare class trigger set")
+        except KeyError:
+            await update.effective_message.reply_text("Invalid choice!")
+        # end try
+    # end def
+
+    async def _run_set_hemisphere(self,
+                                  update: telegram.Update,
+                                  app: object,
+                                  chat: Chat,
+                                  *args) -> None:
+        try:
+            if len(args) == 0:
+                raise KeyError()
+            # end if
+
+            chosen_hemisphere: HemisphereChoices = HemisphereChoices[args[0]]
+            chat.settings.northern_hemisphere = chosen_hemisphere == HemisphereChoices.NORTH
+            chat.settings.southern_hemisphere = chosen_hemisphere == HemisphereChoices.SOUTH
+            await update.effective_message.chat.send_message(f"{Emojis.OK.value} Hemisphere set")
+        except KeyError:
+            await update.effective_message.reply_text("Invalid choice!")
+        # end try
+    # end def
+
+    async def _run_set_geomag_intensity(self,
+                                        update: telegram.Update,
+                                        app: object,
+                                        chat: Chat,
+                                        *args) -> None:
+        try:
+            if len(args) == 0:
+                raise KeyError()
+            # end if
+
+            chosen_intensity: GeomagStormIndex = GeomagStormIndex[args[0]]
+            chat.settings.min_geomag_value = chosen_intensity
+            await update.effective_message.chat.send_message(f"{Emojis.OK.value} Geomagnetic intensity trigger set")
+        except KeyError:
+            await update.effective_message.reply_text("Invalid choice!")
+        # end try
     # end def
 
     async def run(self,
                   update: telegram.Update,
                   app: object,
-                  *args):
+                  *args) -> None:
         await super().run(update, app, *args)
 
         # We have args, and the command is indeed from this class
@@ -130,13 +237,13 @@ class ConfigureMsgCommand(BotCommand):
                     prompt = "What hemisphere's events should trigger alerts?"
                     ret_val = telegram.InlineKeyboardMarkup([[
                         telegram.InlineKeyboardButton("Northern",
-                                                      callback_data=f"{self.cmd} {_SubCmd.CHOOSE_HEMISPHERE.value} {_HemisphereChoices.NORTH.value}"),
+                                                      callback_data=f"{self.cmd} {_SubCmd.CHOOSE_HEMISPHERE.value} {HemisphereChoices.NORTH.name}"),
 
                         telegram.InlineKeyboardButton("Southern",
-                                                      callback_data=f"{self.cmd} {_SubCmd.CHOOSE_HEMISPHERE.value} {_HemisphereChoices.SOUTH.value}"),
+                                                      callback_data=f"{self.cmd} {_SubCmd.CHOOSE_HEMISPHERE.value} {HemisphereChoices.SOUTH.name}"),
 
                         telegram.InlineKeyboardButton("Both hemispheres",
-                                                      callback_data=f"{self.cmd} {_SubCmd.CHOOSE_HEMISPHERE.value} {_HemisphereChoices.BOTH.value}")
+                                                      callback_data=f"{self.cmd} {_SubCmd.CHOOSE_HEMISPHERE.value} {HemisphereChoices.BOTH.name}")
                     ]])
 
                 case "class":
@@ -145,11 +252,13 @@ class ConfigureMsgCommand(BotCommand):
                     for key in flare_help:
                         prompt += f"\n{SolarFlareClass(key).name} = {flare_help[key]}"
                     # end for
-
-                    ret_val = telegram.InlineKeyboardMarkup([[
-                        telegram.InlineKeyboardButton(flare_class.name, callback_data=f"{self.cmd} {_SubCmd.FLARE_CLASS.value} {flare_class.value}")
+                    
+                    buttons = [
+                        telegram.InlineKeyboardButton(flare_class.name, callback_data=f"{self.cmd} {_SubCmd.FLARE_CLASS.value} {flare_class.name}")
                             for flare_class in SolarFlareClass
-                    ]])
+                    ]
+                    
+                    ret_val = telegram.InlineKeyboardMarkup([buttons[x:x+ConfigureMsgCommand._BUTTONS_PER_LINE] for x in range(0, len(buttons), ConfigureMsgCommand._BUTTONS_PER_LINE)])
 
                 case "geomag":
                     prompt = "What minimum geomagnetic storm intensity should trigger alerts?"
@@ -158,10 +267,12 @@ class ConfigureMsgCommand(BotCommand):
                         prompt += f"\n{GeomagStormIndex(key).name} = {geomag_help[key]}"
                     # end for
 
-                    ret_val = telegram.InlineKeyboardMarkup([[
-                        telegram.InlineKeyboardButton(geomag_class.name, callback_data=f"{self.cmd} {_SubCmd.GEOMAG_INTENSITY.value} {geomag_class.value}")
+                    buttons = [
+                        telegram.InlineKeyboardButton(geomag_class.name, callback_data=f"{self.cmd} {_SubCmd.GEOMAG_INTENSITY.value} {geomag_class.name}")
                             for geomag_class in GeomagStormIndex
-                    ]])
+                    ]
+
+                    ret_val = telegram.InlineKeyboardMarkup([buttons[x:x+ConfigureMsgCommand._BUTTONS_PER_LINE] for x in range(0, len(buttons), ConfigureMsgCommand._BUTTONS_PER_LINE)])
             # end match
         # end with
 

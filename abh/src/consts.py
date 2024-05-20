@@ -68,6 +68,13 @@ class GeomagStormIndex(ClassWithHelp, IntEnum):
 # end class
 
 
+class HemisphereChoices(IntEnum):
+    NORTH       = 1
+    SOUTH       = 2
+    BOTH        = 3
+# end class
+
+
 class Emojis(Enum):
     OK          = "\U0001F197"
     WAVE        = "\U0001F44B"
@@ -77,4 +84,5 @@ class Emojis(Enum):
     CLOCK       = "\U0001F551"
     MILKY_WAY   = "\U0001F30C"
     GRAPH       = "\U0001F4CA"
+    QUESTION    = "\U00002753"
 # end class

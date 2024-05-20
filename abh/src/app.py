@@ -1,14 +1,19 @@
 from abh.src.chat                           import Chat
 from abh.src.cmds.botCommand                import BotCommand
+from abh.src.cmds.msg.aboutCommand          import AboutCommand
 from abh.src.cmds.msg.configureCommand      import ConfigureMsgCommand
+from abh.src.cmds.msg.latestInfoCommand     import LatestInfoCommand
+from abh.src.cmds.msg.statusCommand         import StatusCommand
 from abh.src.config                         import Config
 from abh.src.config                         import ConfigKeyType
+from abh.src.scrapers.scraper               import Scraper
 from abh.src.updates.parser                 import TelegramUpdateParser
 from abh.src.updates.messageReceiveParser   import TelegramMessageReceiveParser
 from abh.src.updates.memberUpdatedParser    import TelegramMemberUpdatedParser
 from abh.src.updates.inlineQueryParser      import TelegramInlineQueryParser
-from abh.src.updates.inlineResposeParser    import TelegramInlineResponseParser
+from abh.src.updates.inlineResponseParser   import TelegramInlineResponseParser
 from abh.src.log                            import *
+from os.path                                import join
 from os.path                                import exists
 from sys                                    import version_info
 from traceback                              import format_exc
@@ -30,7 +35,7 @@ else:
 
 class BotApp():
 
-    _DB_FILENAME = ".db"
+    _DB_FILENAME = join("data", "chats.bin")
     _APP = None
 
     def __init__(self) -> None:
@@ -43,9 +48,22 @@ class BotApp():
             TelegramInlineResponseParser()
         ]
         self._commands: list[BotCommand] = [
-            ConfigureMsgCommand()
+            AboutCommand(),
+            ConfigureMsgCommand(),
+            LatestInfoCommand(),
+            StatusCommand()
         ]
         self.debug_mode: bool = False
+        self.scraper = Scraper()
+
+        # Start scraper
+        self.scraper.load_history()
+        self.scraper.run_thread()
+    # end def
+
+    def stop(self):
+        self.scraper.save_history()
+        self.scraper.stop_thread()
     # end def
 
     def has_chat(self, uid: int) -> bool:
@@ -251,8 +269,15 @@ def run() -> None:
     except KeyboardInterrupt:
         log("Ctrl + C detected")
 
+    except Exception:
+        error(format_exc())
+
     finally:
-        BotApp.singleton().write()
+        singleton = BotApp.singleton()
+        if singleton:
+            singleton.write()
+            singleton.stop()
+        # end if
         project()
         log("")
         log("Bot has stopped")

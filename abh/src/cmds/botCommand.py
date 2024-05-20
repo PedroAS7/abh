@@ -18,7 +18,7 @@ class BotCommand():
     async def run(self,
                   update: telegram.Update,
                   app: object,
-                  *args):
+                  *args) -> None:
         # Update chat admins if needed
         if update.effective_message:
             tg_chat = update.effective_message.chat

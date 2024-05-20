@@ -1,4 +1,5 @@
 from os.path import exists
+from os.path import join
 from json import load
 from enum import Enum
 
@@ -71,7 +72,7 @@ class _ConfigKey():
 
 class Config():
 
-    _CFG_FILENAME = "cfg.json"
+    _CFG_FILENAME = join("data", "cfg.json")
 
     def __init__(self) -> None:
         self._cfg_list: list[_ConfigKey] = [

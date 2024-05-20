@@ -28,6 +28,7 @@ class TelegramInlineResponseParser(TelegramUpdateParser):
             if choices:
                 if update.callback_query.message and hasattr(update.callback_query.message, "reply_text"):
                     await update.callback_query.message.reply_text(prompt, reply_markup=choices)
+                    await update.callback_query.answer()
                 else:
                     await update.callback_query.answer("Invalid command")
                 # end if
