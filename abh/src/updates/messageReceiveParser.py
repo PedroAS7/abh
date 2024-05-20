@@ -47,7 +47,17 @@ class TelegramMessageReceiveParser(TelegramUpdateParser):
             # end try
 
         else:
-            await update.message.reply_text(f"Please use the interactive menu by typing {app.bot_user.name}")
+            chat = None
+            if update.effective_chat:
+                chat = update.effective_chat
+            elif update.effective_message:
+                chat = update.effective_message.chat
+            # end if
+            
+            # Only say this if user sent a message on a private chat
+            if chat and chat.type == telegram.constants.ChatType.PRIVATE:
+                await update.message.reply_text(f"Please use the interactive menu by typing {app.bot_user.name}")
+            # end if
         # end if
     # end def
 # end class
