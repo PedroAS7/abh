@@ -7,4 +7,8 @@ if __name__ != "__main__":
 # end if
 
 loop = asyncio.get_event_loop()
-loop.run_until_complete(run())
+try:
+    loop.run_until_complete(run())
+finally:
+    loop.close()
+# end try

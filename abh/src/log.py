@@ -9,17 +9,17 @@ if platform.startswith("win"):
     just_fix_windows_console()
 # end if
 
-#--
+# --
 # Globals
-#--
+# --
 
 _indent_level = 0
 _indent_max = 5
 
 
-#--
+# --
 # Functions
-#--
+# --
 
 def log(*what: object,
         fore: Fore = Fore.RESET,
@@ -38,9 +38,9 @@ def error(*what: object,
 # end def
 
 def warn(*what: object,
-          sep: str | None = " ",
-          end: str | None = "\n"):
-    log(*what, fore=Fore.YELLOW, back=Back.BLACK, style=Style.BRIGHT, sep=sep, end=end)
+         sep: str | None = " ",
+         end: str | None = "\n"):
+    log(*what, fore=Fore.BLACK, back=Back.YELLOW, style=Style.BRIGHT, sep=sep, end=end)
 # end def
 
 def debug(*what: object,

@@ -19,15 +19,8 @@ from os.path import join
 from os.path import exists
 from sys import version_info
 from traceback import format_exc
-import asyncio
 import pickle
 import telegram
-
-if version_info.major == 3 and version_info.minor > 11:
-    from typing import Self
-else:
-    from typing_extensions import Self
-# end if
 
 
 # --
@@ -250,15 +243,16 @@ async def run() -> None:
         error(format_exc())
 
     finally:
+
+        for thread in threads:
+            thread.stop_thread()
+        # end for
+
         singleton = BotApp.singleton()
         if singleton:
             singleton.write()
             singleton.stop()
         # end if
-
-        for thread in threads:
-            thread.stop_thread()
-        # end for
 
         project()
         log("")
