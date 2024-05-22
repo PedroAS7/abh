@@ -1,9 +1,10 @@
 from abh.src.app import run
-from abh.src.config import Config
+import asyncio
 
 
 if __name__ != "__main__":
     raise ImportError("File must not be imported")
 # end if
 
-run()
+loop = asyncio.get_event_loop()
+loop.run_until_complete(run())

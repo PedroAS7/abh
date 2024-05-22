@@ -2,6 +2,7 @@ from os.path import exists
 from os.path import join
 from json import load
 from enum import Enum
+from typing import Any
 
 
 class ConfigKeyType(Enum):
@@ -93,8 +94,8 @@ class Config():
         ]
     # end def
 
-    def __getitem__(self, key: ConfigKeyType) -> _ConfigKey:
-        found_key: _ConfigKey = None
+    def __getitem__(self, key: ConfigKeyType) -> Any:
+        found_key: _ConfigKey | None = None
         for cfg_key in self._cfg_list:
             if key == cfg_key.type:
                 found_key = cfg_key

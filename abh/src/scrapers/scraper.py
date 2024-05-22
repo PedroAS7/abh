@@ -1,4 +1,5 @@
 from datetime import datetime
+from abh.src.ManagedThread import ManagedThread
 from abh.src.consts import GeomagStormIndex
 from abh.src.consts import SolarFlareClass
 from abh.src.consts import HemisphereChoices
@@ -10,11 +11,11 @@ import pickle
 import threading
 
 
-class ScrapeResult():
+class ScrapeResult:
 
     def __init__(self) -> None:
         self._raw_geomag_intensity: float = 0.0
-        self._geomag_intesity: GeomagStormIndex = GeomagStormIndex.KP0
+        self._geomag_intensity: GeomagStormIndex = GeomagStormIndex.KP0
         self._raw_class: float = 0.0
         self._flare_class: SolarFlareClass = SolarFlareClass.M5
         self._hemisphere: HemisphereChoices = HemisphereChoices.BOTH
@@ -31,7 +32,7 @@ class ScrapeResult():
     
     @property
     def intensity(self) -> GeomagStormIndex:
-        return self._geomag_intesity
+        return self._geomag_intensity
     # end def
     
     @property
@@ -71,55 +72,19 @@ class ScrapeResult():
 # end def
 
 
-class Scraper():
+class Scraper(ManagedThread):
 
     _HISTORY_FILENAME = join("data", "scraper.bin")
-    _THREAD_JOIN_TIMEOUT = 5.0
-    _RESULTS_COND_TIMEOUT = 2.0
 
     def __init__(self) -> None:
+        super().__init__("Scraper")
         self._results: list[ScrapeResult] = []
         self._results_cond: threading.Condition = threading.Condition()
-        self._running: bool = False
-        self._thread: threading.Thread = None
-        self._thread_evt: threading.Event = threading.Event()
     # end def
 
-    def run_thread(self) -> None:
-
-        if self._running:
-            raise RuntimeError("Scraper is already running")
-        # end if
-
-        self._thread_evt.clear()
-        self._thread = threading.Thread(target=_t_scraper, args=[self])
-        self._thread.start()
-        self._running = True
-        debug("Scraper thread started")
+    def run_thread(self, **kwargs) -> None:
+        super().run_thread(_t_scraper)
     # end def
-
-    def stop_thread(self) -> None:
-
-        if not self._running:
-            raise RuntimeError("Scraper is not running")
-        # end if
-        
-        log("Stopping scraper...")
-        self._thread_evt.set()
-        try:
-            self._thread.join(Scraper._THREAD_JOIN_TIMEOUT)
-
-            # Thread did not stop
-            if self._thread.is_alive():
-                raise TimeoutError()
-            # end if
-
-            self._running = False
-            debug("Scraper thread stopped")
-        except TimeoutError:
-            error("Failed to stop scraper thread")
-        # end try
-    # end de
 
     def load_history(self, file_name=_HISTORY_FILENAME) -> None:
 
@@ -154,10 +119,6 @@ class Scraper():
         # end with
 
         self._results_cond.release()
-    # end def
-
-    def _keep_alive(self) -> bool:
-        return not self._thread_evt.is_set()
     # end def
 
     def _append_result(self, result: ScrapeResult) -> None:
@@ -196,12 +157,11 @@ def _t_scraper(scraper: Scraper):
     """
 
     scrape_interval_s: float = 60.0 * 5.0
-    keep_alive: bool = True
 
     # Synch with next sharp minute
     remaining_secs = time() % 60
     debug(f"{remaining_secs:2.1f} seconds remaining until next scrape")
-    keep_alive = not scraper._thread_evt.wait(remaining_secs)
+    keep_alive = not scraper.event_wait(remaining_secs)
 
     while keep_alive:
         scrape_time = time()
@@ -211,6 +171,6 @@ def _t_scraper(scraper: Scraper):
         scraper._append_result(result)
 
         # Sleep & check if we need to loop
-        keep_alive = not scraper._thread_evt.wait(scrape_interval_s)
+        keep_alive = not scraper.event_wait(scrape_interval_s)
     # end def
 # end def
