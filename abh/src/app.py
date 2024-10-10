@@ -7,6 +7,7 @@ from abh.src.cmds.msg.latestInfoCommand import LatestInfoCommand
 from abh.src.cmds.msg.statusCommand import StatusCommand
 from abh.src.config import Config
 from abh.src.config import ConfigKeyType
+from abh.src.scrapers.geomag import GeomagScraper
 from abh.src.scrapers.scraper import Scraper
 from abh.src.updates.listener import BotListener
 from abh.src.updates.parser import TelegramUpdateParser
@@ -48,18 +49,22 @@ class BotApp():
             StatusCommand()
         ]
         self.debug_mode: bool = False
-        self.scraper = Scraper()
+        self.scrapers: list[Scraper] = [
+            GeomagScraper()
+        ]
 
         # Start scraper
-        self.scraper.load_history()
-        self.scraper.run_thread()
-
+        for scraper in self.scrapers:
+            scraper.load_history()
+            scraper.run_thread()
+        # end for
     # end def
 
     def stop(self):
-        self.scraper.save_history()
-        self.scraper.stop_thread()
-
+        for scraper in self.scrapers:
+            scraper.save_history()
+            scraper.stop_thread()
+        # end for
     # end def
 
     def has_chat(self, uid: int) -> bool:
