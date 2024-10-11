@@ -2,3 +2,4 @@ colorama
 python-telegram-bot
 python-telegram-bot[webhooks]
 python-telegram-bot[http2]
+tzdata

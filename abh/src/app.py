@@ -7,8 +7,8 @@ from abh.src.cmds.msg.latestInfoCommand import LatestInfoCommand
 from abh.src.cmds.msg.statusCommand import StatusCommand
 from abh.src.config import Config
 from abh.src.config import ConfigKeyType
+from abh.src.scrapers.flares import FlaresScraper
 from abh.src.scrapers.geomag import GeomagScraper
-from abh.src.scrapers.scraper import Scraper
 from abh.src.updates.listener import BotListener
 from abh.src.updates.parser import TelegramUpdateParser
 from abh.src.updates.messageReceiveParser import TelegramMessageReceiveParser
@@ -16,9 +16,9 @@ from abh.src.updates.memberUpdatedParser import TelegramMemberUpdatedParser
 from abh.src.updates.inlineQueryParser import TelegramInlineQueryParser
 from abh.src.updates.inlineResponseParser import TelegramInlineResponseParser
 from abh.src.log import *
+from os import mkdir
 from os.path import join
 from os.path import exists
-from sys import version_info
 from traceback import format_exc
 import pickle
 import telegram
@@ -30,11 +30,12 @@ import telegram
 
 
 class BotApp():
-    _DB_FILENAME = join("data", "chats.bin")
+    _DB_FOLDER = "data"
+    _DB_FILENAME = join(_DB_FOLDER, "chats.bin")
     _APP = None
 
     def __init__(self) -> None:
-        self._bot_user: telegram.User = None
+        self._bot_user: telegram.User | None = None
         self._chats: list[Chat] = []
         self._handlers: list[TelegramUpdateParser] = [
             TelegramMessageReceiveParser(),
@@ -49,22 +50,6 @@ class BotApp():
             StatusCommand()
         ]
         self.debug_mode: bool = False
-        self.scrapers: list[Scraper] = [
-            GeomagScraper()
-        ]
-
-        # Start scraper
-        for scraper in self.scrapers:
-            scraper.load_history()
-            scraper.run_thread()
-        # end for
-    # end def
-
-    def stop(self):
-        for scraper in self.scrapers:
-            scraper.save_history()
-            scraper.stop_thread()
-        # end for
     # end def
 
     def has_chat(self, uid: int) -> bool:
@@ -109,6 +94,10 @@ class BotApp():
     # end def
 
     def write(self) -> None:
+        if not exists(self._DB_FOLDER):
+            mkdir(self._DB_FOLDER)
+        # end if
+
         with open(BotApp._DB_FILENAME, "wb") as db_file:
             pickle.dump(self._chats, db_file)
         # end with
@@ -234,7 +223,8 @@ async def run() -> None:
         await bot.initialize()
         BotApp.singleton()._bot_user = await bot.get_me()
 
-        threads.append(Scraper())
+        threads.append(FlaresScraper())
+        threads.append(GeomagScraper())
         threads.append(BotListener(BotApp.singleton(), bot))
 
         for thread in threads:

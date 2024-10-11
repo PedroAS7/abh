@@ -14,7 +14,11 @@ class ManagedThread:
         self._thread_evt: threading.Event = threading.Event()
     # end def
 
-    def run_thread(self, t_func: callable) -> None:
+    def run_thread(self, t_func: callable = None) -> None:
+
+        if not t_func:
+            raise RuntimeError("t_func is None")
+        # end if
 
         if self._running:
             raise RuntimeError(f"Thread '{self._name}' is already running")

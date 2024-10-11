@@ -16,8 +16,8 @@ class ScrapeResult:
     def __init__(self) -> None:
         self._raw_geomag_intensity: float = 0.0
         self._geomag_intensity: GeomagStormIndex = GeomagStormIndex.KP0
-        self._raw_class: float = 0.0
-        self._flare_class: SolarFlareClass = SolarFlareClass.M5
+        self._raw_flare_class: float = 0.0
+        self._flare_class: SolarFlareClass = SolarFlareClass.OTHER
         self._hemisphere: HemisphereChoices = HemisphereChoices.BOTH
         self._attachments: list[str] = []
         self._scrape_time: datetime = datetime.utcnow()
@@ -30,7 +30,7 @@ class ScrapeResult:
     def merge(self, other: 'ScrapeResult') -> 'ScrapeResult':
         self._raw_geomag_intensity = max(self._raw_geomag_intensity, other._raw_geomag_intensity)
         self._geomag_intensity = max(self._geomag_intensity, other._geomag_intensity)
-        self._raw_class = max(self._raw_class, other._raw_class)
+        self._raw_flare_class = max(self._raw_flare_class, other._raw_flare_class)
         self._flare_class = max(self._flare_class, other._flare_class)
         self._hemisphere |= other._hemisphere
         return self
@@ -48,7 +48,7 @@ class ScrapeResult:
 
     @property
     def raw_flare_class(self) -> float:
-        return self._raw_class
+        return self._raw_flare_class
     # end def
 
     @property
@@ -107,8 +107,9 @@ class ScrapeResult:
 
 
 class SpecializedScraper:
-    def __init__(self, name: str) -> None:
-        self.name = name
+    def __init__(self,
+                 name: str) -> None:
+        self._name = name
     # end def
 
     """
@@ -129,20 +130,28 @@ class Scraper(ManagedThread):
 
     def __init__(self,
                  name,
+                 file_name,
                  provides_intensity: bool,
                  provides_class: bool) -> None:
         super().__init__(f"Scraper '{name}'")
-        self._history_filename = join("data", f"scraper_{name}.bin")
         self._provides_intensity = provides_intensity
         self._provides_class = provides_class
         self._name = name
+        self._file_name = file_name
+        self._history_filename = join("data", f"scraper_{file_name}.bin")
         self._specialized_scrapers: list[SpecializedScraper] = []
         self._results: list[ScrapeResult] = []
         self._results_cond: threading.Condition = threading.Condition()
     # end def
 
     def run_thread(self, **kwargs) -> None:
+        self.load_history()
         super().run_thread(_t_scraper)
+    # end def
+
+    def stop_thread(self) -> None:
+        self.save_history()
+        super().stop_thread()
     # end def
 
     def load_history(self) -> None:
@@ -219,9 +228,10 @@ class Scraper(ManagedThread):
             for i in range(0, len(self._results)):
                 reg_result = self._results[i]
 
-                if reg_result.start_time < result.start_time < reg_result.end_time:
+                if reg_result.start_time <= result.start_time < reg_result.end_time:
                     reg_result = reg_result.merge(result)
                     self._results[i] = reg_result
+                    break
                 # end if
             # end for
         # end for
@@ -263,7 +273,7 @@ class Scraper(ManagedThread):
 
 def _t_scraper(scraper: Scraper):
     """
-    Scraper thread
+    Scraper thread entrypoint
 
     @note  This is a thread's main loop. Use conditions and events to interact with it
     @param scraper: (Scraper) Scraper instance
@@ -271,7 +281,7 @@ def _t_scraper(scraper: Scraper):
 
     # Synch with next sharp minute
     remaining_secs = time() % 60
-    debug(f"{remaining_secs:2.1f} seconds remaining until next scrape")
+    debug(f"[{scraper.name}] {remaining_secs:2.1f} seconds remaining until next scrape")
     keep_alive = not scraper.event_wait(remaining_secs)
 
     while keep_alive:
@@ -280,4 +290,6 @@ def _t_scraper(scraper: Scraper):
         # Sleep & check if we need to loop
         keep_alive = not scraper.event_wait(Scraper.SCRAPE_INTERVAL_S)
     # end def
+
+    debug(f"[{scraper.name}] Thread is dying")
 # end def

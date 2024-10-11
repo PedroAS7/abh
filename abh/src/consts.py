@@ -16,22 +16,38 @@ class ClassWithHelp():
 
 class SolarFlareClass(ClassWithHelp, IntEnum):
     # Class is 10 ^ (val / 10)
+    OTHER = 0
+    M1  = -50
     M5  = -45
     X1  = -40
     X5  = -35
     X10 = -30
-    X20 = -31
+    X20 = -20
+    X30 = -10
     
     @staticmethod
     def get_help() -> dict[object, str]:
         # https://svs.gsfc.nasa.gov/10109/
         return {
-            SolarFlareClass.M5:  "Moderate (350 per solar cycle). Might trigger a lot of alerts",
-            SolarFlareClass.X1:  "Strong (175 per solar cycle)",
-            SolarFlareClass.X5:  "Very strong (75 per solar cycle)",
-            SolarFlareClass.X10: "Severe (8 per solar cycle)",
-            SolarFlareClass.X20: "Extreme (1 per solar cycle)"
+            SolarFlareClass.OTHER: "Other class. Triggers every time",
+            SolarFlareClass.M1:    "Moderate. Will trigger a lot of alerts",
+            SolarFlareClass.M5:    "Moderate (350 per solar cycle). Might trigger a lot of alerts",
+            SolarFlareClass.X1:    "Strong (175 per solar cycle)",
+            SolarFlareClass.X5:    "Very strong (75 per solar cycle)",
+            SolarFlareClass.X10:   "Severe (8 per solar cycle)",
+            SolarFlareClass.X20:   "Extreme (1 per solar cycle)",
+            SolarFlareClass.X30:   "Unbelievably extreme (here as a placeholder for >X20)"
         }
+    # end def
+
+    @staticmethod
+    def lowest() -> 'SolarFlareClass':
+        return SolarFlareClass.M1
+    # end def
+
+    @staticmethod
+    def highest() -> 'SolarFlareClass':
+        return SolarFlareClass.X30
     # end def
 # end class
 
