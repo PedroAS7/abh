@@ -33,6 +33,7 @@ class ScrapeResult:
         self._raw_flare_class = max(self._raw_flare_class, other._raw_flare_class)
         self._flare_class = max(self._flare_class, other._flare_class)
         self._hemisphere |= other._hemisphere
+        self.attachments.extend(other.attachments)
         return self
     # end def
 
@@ -150,8 +151,8 @@ class Scraper(ManagedThread):
     # end def
 
     def stop_thread(self) -> None:
-        self.save_history()
         super().stop_thread()
+        self.save_history()
     # end def
 
     def load_history(self) -> None:
@@ -208,12 +209,24 @@ class Scraper(ManagedThread):
             raise RuntimeError("Failed to acquire lock to get append latest result")
         # end if
 
-        results = sorted(results, key=lambda scrape_result: scrape_result.start_time)
+        results = sorted(results, key=lambda scrape_result: scrape_result.start_time, reverse=True)
         earliest_result = self._results[-1] if len(self._results) > 0 else None
         latest_result = self._results[0] if len(self._results) > 0 else None
+        
+        earlier_to_new_results_i = 0
+        if len(results):
+            earliest_new_result = results[-1]
+
+            for i in range(len(self._results) - 1, -1, -1):
+                if self._results[i].start_time < earliest_new_result.start_time:
+                    earlier_to_new_results_i = i
+                    break
+                # end if
+            # end for
+        # end if
 
         for result in results:
-
+            
             if not latest_result or result.start_time >= latest_result.end_time:
                 self._results.append(result)
                 continue
@@ -223,14 +236,13 @@ class Scraper(ManagedThread):
                 self._results.append(result)
                 continue
             # end if
-
+            
             # Merge scrapes with overlapping times
-            for i in range(0, len(self._results)):
+            for i in range(earlier_to_new_results_i, len(self._results)):
                 reg_result = self._results[i]
 
                 if reg_result.start_time <= result.start_time < reg_result.end_time:
-                    reg_result = reg_result.merge(result)
-                    self._results[i] = reg_result
+                    self._results[i] = reg_result.merge(result)
                     break
                 # end if
             # end for
@@ -284,11 +296,11 @@ def _t_scraper(scraper: Scraper):
     debug(f"[{scraper.name}] {remaining_secs:2.1f} seconds remaining until next scrape")
     keep_alive = not scraper.event_wait(remaining_secs)
 
-    while keep_alive:
+    while scraper.keep_alive():
         scraper.scrape()
 
         # Sleep & check if we need to loop
-        keep_alive = not scraper.event_wait(Scraper.SCRAPE_INTERVAL_S)
+        scraper.event_wait(Scraper.SCRAPE_INTERVAL_S)
     # end def
 
     debug(f"[{scraper.name}] Thread is dying")

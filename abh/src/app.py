@@ -228,7 +228,7 @@ async def run() -> None:
         threads.append(BotListener(BotApp.singleton(), bot))
 
         for thread in threads:
-            thread.run_thread(None)
+            thread.run_thread()
         # end for
 
     except KeyboardInterrupt:
@@ -246,7 +246,6 @@ async def run() -> None:
         singleton = BotApp.singleton()
         if singleton:
             singleton.write()
-            singleton.stop()
         # end if
 
         project()

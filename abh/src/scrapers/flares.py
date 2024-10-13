@@ -55,6 +55,12 @@ class NoaaFlareScraper(SpecializedScraper):
 
             result._flare_class = flare_class
 
+            # Add attachments. Images are generated every 5 minutes
+            norm_date: datetime = time_tag - timedelta(minutes=time_tag.minute - (time_tag.minute % 5))
+            result._attachments.append(self._magnetosphere)
+            result._attachments.append(self._forecast_north.replace("{date}", norm_date.strftime("%Y-%m-%d_%H%M")))
+            result._attachments.append(self._forecast_south.replace("{date}", norm_date.strftime("%Y-%m-%d_%H%M")))
+
             results.append(result)
         # end if
 
