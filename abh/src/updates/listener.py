@@ -1,7 +1,7 @@
+import asyncio
 from traceback import format_exc
 from abh.src.log import *
 import telegram
-
 from abh.src.ManagedThread import ManagedThread
 
 
@@ -14,7 +14,7 @@ class BotListener(ManagedThread):
     # end def
 
     def run_thread(self, **kwargs) -> None:
-        super().run_thread(_t_serve_bot)
+        super().run_thread(_t_start)
     # end def
 
     @property
@@ -27,6 +27,13 @@ class BotListener(ManagedThread):
         return self._bot
     # end def
 # end class
+
+
+def _t_start(listener: BotListener) -> None:
+    loop = asyncio.new_event_loop()
+    loop.run_until_complete(_t_serve_bot(listener))
+    loop.close()
+# end def
 
 
 async def _t_serve_bot(listener: BotListener) -> None:

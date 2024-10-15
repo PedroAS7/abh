@@ -38,6 +38,7 @@
     <Compile Include="abh\src\scrapers\scraper.py" />
     <Compile Include="abh\src\updates\inlineResponseParser.py" />
     <Compile Include="abh\src\updates\inlineQueryParser.py" />
+    <Compile Include="abh\src\updates\listener.py" />
     <Compile Include="abh\src\updates\memberUpdatedParser.py" />
     <Compile Include="abh\src\updates\messageReceiveParser.py" />
     <Compile Include="abh\src\updates\parser.py" />

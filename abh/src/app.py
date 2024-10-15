@@ -1,3 +1,4 @@
+from time import sleep
 from abh.src.ManagedThread import ManagedThread
 from abh.src.chat import Chat
 from abh.src.cmds.botCommand import BotCommand
@@ -22,6 +23,7 @@ from os.path import exists
 from traceback import format_exc
 import pickle
 import telegram
+import asyncio
 
 
 # --
@@ -206,7 +208,7 @@ async def serve_forever(cfg: Config) -> None:
 # end def
 
 
-async def run() -> None:
+def run() -> None:
     log("ABH - Aurora Borealis Hunterus bot")
     log("(Also known as C\xe9line.bot)")
     log("")
@@ -220,8 +222,10 @@ async def run() -> None:
         cfg = Config.read()
         BotApp.singleton().debug_mode = cfg[ConfigKeyType.DEBUG_MODE]
         bot = telegram.Bot(cfg[ConfigKeyType.BOT_TOKEN], local_mode=True)
-        await bot.initialize()
-        BotApp.singleton()._bot_user = await bot.get_me()
+        
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(bot.initialize())
+        BotApp.singleton()._bot_user = loop.run_until_complete(bot.get_me())
 
         threads.append(FlaresScraper())
         threads.append(GeomagScraper())
@@ -230,6 +234,11 @@ async def run() -> None:
         for thread in threads:
             thread.run_thread()
         # end for
+
+        # Eternally sleep until an exception happened or Ctrl + C was hit
+        while True:
+            sleep(1)
+        # end while
 
     except KeyboardInterrupt:
         log("Ctrl + C detected")
@@ -248,8 +257,11 @@ async def run() -> None:
             singleton.write()
         # end if
 
+        loop.close()
         project()
         log("")
         log("Bot has stopped")
     # end try
+
+    pass
 # end def
