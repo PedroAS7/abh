@@ -217,19 +217,20 @@ def run() -> None:
     threads: list[ManagedThread] = []
 
     # noinspection PyBroadException
+    loop = None
     try:
         BotApp.read()
         cfg = Config.read()
         BotApp.singleton().debug_mode = cfg[ConfigKeyType.DEBUG_MODE]
         bot = telegram.Bot(cfg[ConfigKeyType.BOT_TOKEN], local_mode=True)
         
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
         loop.run_until_complete(bot.initialize())
         BotApp.singleton()._bot_user = loop.run_until_complete(bot.get_me())
 
         threads.append(FlaresScraper())
         threads.append(GeomagScraper())
-        threads.append(BotListener(BotApp.singleton(), bot))
+        threads.append(BotListener(BotApp.singleton(), bot, loop))
 
         for thread in threads:
             thread.run_thread()
@@ -255,6 +256,10 @@ def run() -> None:
         singleton = BotApp.singleton()
         if singleton:
             singleton.write()
+        # end if
+
+        if loop:
+            loop.close()
         # end if
 
         loop.close()
