@@ -187,32 +187,6 @@ class BotApp():
 # end class
 
 
-# --
-# Functions
-# --
-
-async def serve_forever(cfg: Config) -> None:
-    bot: telegram.Bot | None = None
-    app = BotApp.singleton()
-
-    try:
-        bot = telegram.Bot(cfg[ConfigKeyType.BOT_TOKEN], local_mode=True)
-        await bot.initialize()
-        app._bot_user = await bot.get_me()
-        listener_thread = BotListener(app, bot)
-        listener_thread.run_thread()
-
-    except Exception:
-        error(format_exc())
-
-    finally:
-        if bot:
-            await bot.shutdown()
-        # end if
-    # end try
-# end def
-
-
 def run() -> None:
     log("ABH - Aurora Borealis Hunterus bot")
     log("(Also known as C\xe9line.bot)")
