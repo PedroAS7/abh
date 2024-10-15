@@ -10,6 +10,7 @@ from abh.src.config import Config
 from abh.src.config import ConfigKeyType
 from abh.src.scrapers.flares import FlaresScraper
 from abh.src.scrapers.geomag import GeomagScraper
+from abh.src.scrapers.scraper import Scraper
 from abh.src.updates.listener import BotListener
 from abh.src.updates.parser import TelegramUpdateParser
 from abh.src.updates.messageReceiveParser import TelegramMessageReceiveParser
@@ -51,6 +52,7 @@ class BotApp():
             LatestInfoCommand(),
             StatusCommand()
         ]
+        self._scrapers: list[Scraper] = []
         self.debug_mode: bool = False
     # end def
 
@@ -137,7 +139,10 @@ class BotApp():
         # end if
 
         return found_command
+    # end def
 
+    def add_scraper(self, scraper: Scraper):
+        self._scrapers.append(scraper)
     # end def
 
     @property
@@ -153,7 +158,7 @@ class BotApp():
     # end def
 
     @staticmethod
-    def singleton() -> object:
+    def singleton() -> 'BotApp':
         return BotApp._APP
 
     # end def
@@ -228,8 +233,14 @@ def run() -> None:
         loop.run_until_complete(bot.initialize())
         BotApp.singleton()._bot_user = loop.run_until_complete(bot.get_me())
 
-        threads.append(FlaresScraper())
-        threads.append(GeomagScraper())
+        flares_scraper = FlaresScraper()
+        BotApp.singleton().add_scraper(flares_scraper)
+        threads.append(flares_scraper)
+
+        geomag_scraper = GeomagScraper()
+        BotApp.singleton().add_scraper(geomag_scraper)
+        threads.append(geomag_scraper)
+        
         threads.append(BotListener(BotApp.singleton(), bot, loop))
 
         for thread in threads:

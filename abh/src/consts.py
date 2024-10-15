@@ -17,6 +17,10 @@ class ClassWithHelp():
 class SolarFlareClass(ClassWithHelp, IntEnum):
     # Class is 10 ^ (val / 10)
     OTHER = 0
+    B1  = -70
+    B5  = -65
+    C1  = -60
+    C5  = -55
     M1  = -50
     M5  = -45
     X1  = -40
@@ -30,6 +34,10 @@ class SolarFlareClass(ClassWithHelp, IntEnum):
         # https://svs.gsfc.nasa.gov/10109/
         return {
             SolarFlareClass.OTHER: "Other class. Triggers every time",
+            SolarFlareClass.B1:    "Weak. Will trigger a lot of alerts",
+            SolarFlareClass.B5:    "Weak. Will trigger a lot of alerts",
+            SolarFlareClass.C1:    "Weak. Will trigger a lot of alerts",
+            SolarFlareClass.C5:    "Moderate. Will trigger a lot of alerts",
             SolarFlareClass.M1:    "Moderate. Will trigger a lot of alerts",
             SolarFlareClass.M5:    "Moderate (350 per solar cycle). Might trigger a lot of alerts",
             SolarFlareClass.X1:    "Strong (175 per solar cycle)",
@@ -42,7 +50,7 @@ class SolarFlareClass(ClassWithHelp, IntEnum):
 
     @staticmethod
     def lowest() -> 'SolarFlareClass':
-        return SolarFlareClass.M1
+        return SolarFlareClass.B1
     # end def
 
     @staticmethod
