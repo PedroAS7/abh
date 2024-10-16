@@ -1,5 +1,6 @@
 from enum import IntEnum
 from enum import Enum
+import math
 
 
 #--
@@ -56,6 +57,24 @@ class SolarFlareClass(ClassWithHelp, IntEnum):
     @staticmethod
     def highest() -> 'SolarFlareClass':
         return SolarFlareClass.X30
+    # end def
+
+    @staticmethod
+    def round_to_val(value: float) -> 'SolarFlareClass':
+        # Calculate corresponding class
+        log10_intensity = math.log10(value)
+        norm_intensity = math.floor(log10_intensity * 10)
+
+        if norm_intensity < SolarFlareClass.lowest():
+            flare_class = SolarFlareClass.OTHER
+        elif norm_intensity > SolarFlareClass.highest():
+            flare_class = SolarFlareClass.highest()
+        else:
+            mod = -norm_intensity % 5
+            flare_class = SolarFlareClass(norm_intensity + mod)
+        # end if
+
+        return flare_class
     # end def
 # end class
 
