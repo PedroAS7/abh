@@ -8,6 +8,7 @@ from abh.src.cmds.msg.latestInfoCommand import LatestInfoCommand
 from abh.src.cmds.msg.statusCommand import StatusCommand
 from abh.src.config import Config
 from abh.src.config import ConfigKeyType
+from abh.src.scrapers.cme import CmeScraper
 from abh.src.scrapers.flares import FlaresScraper
 from abh.src.scrapers.geomag import GeomagScraper
 from abh.src.scrapers.scraper import Scraper
@@ -240,6 +241,10 @@ def run() -> None:
         geomag_scraper = GeomagScraper()
         BotApp.singleton().add_scraper(geomag_scraper)
         threads.append(geomag_scraper)
+
+        cme_scraper = CmeScraper()
+        BotApp.singleton().add_scraper(cme_scraper)
+        threads.append(cme_scraper)
         
         threads.append(BotListener(BotApp.singleton(), bot, loop))
 
@@ -253,7 +258,7 @@ def run() -> None:
         # end while
 
     except KeyboardInterrupt:
-        log("Ctrl + C detected")
+        log("Stop requested")
 
     except Exception:
         error(format_exc())

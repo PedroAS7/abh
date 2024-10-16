@@ -33,6 +33,7 @@
     <Compile Include="abh\src\config.py" />
     <Compile Include="abh\src\consts.py" />
     <Compile Include="abh\src\log.py" />
+    <Compile Include="abh\src\scrapers\cme.py" />
     <Compile Include="abh\src\scrapers\flares.py" />
     <Compile Include="abh\src\scrapers\geomag.py" />
     <Compile Include="abh\src\scrapers\scraper.py" />

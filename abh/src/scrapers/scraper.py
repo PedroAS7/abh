@@ -38,7 +38,7 @@ class ScrapeResult:
     # end def
 
     @property
-    def raw_intensity(self) -> float:
+    def raw_geomag_intensity(self) -> float:
         return self._raw_geomag_intensity
     # end def
 
@@ -196,6 +196,10 @@ class Scraper(ManagedThread):
             self._append_result(scraper.scrape())
         # end for
         debug(f"[{self.name}] Scrape finished")
+    # end def
+
+    def get_new(self) -> list[ScrapeResult]:
+        return list()
     # end def
 
     def _append_specialized_scraper(self, scraper: SpecializedScraper) -> None:
