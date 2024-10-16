@@ -40,15 +40,18 @@ class ManagedThread:
         log(f"Stopping thread '{self._name}'...")
         self._thread_evt.set()
         try:
-            self._thread.join(ManagedThread._THREAD_JOIN_TIMEOUT)
+            while self._thread.is_alive():
+                self._thread.join(ManagedThread._THREAD_JOIN_TIMEOUT)
 
-            # Thread did not stop
-            if self._thread.is_alive():
-                raise TimeoutError()
-            # end if
-
-            self._running = False
-            debug(f"Thread '{self._name}' stopped")
+                # Thread stopped
+                if not self._thread.is_alive():
+                    self._running = False
+                    debug(f"Thread '{self._name}' stopped")
+                    break
+                # end if
+                
+                warn(f"Thread '{self._name}' failed to stop. Retrying")
+            # end while
         except TimeoutError:
             error(f"Failed to stop thread '{self._name}'")
         # end try

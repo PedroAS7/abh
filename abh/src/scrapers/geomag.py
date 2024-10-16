@@ -1,6 +1,3 @@
-# USA: https://services.swpc.noaa.gov/json/planetary_k_index_1m.json
-# Germany: https://www-app3.gfz-potsdam.de/kp_index/Kp_ap_nowcast.txt
-
 import json
 import re
 from json import JSONDecodeError
@@ -23,7 +20,7 @@ class GfzPotsdamScraper(SpecializedScraper):
         self._endpoint = "https://www-app3.gfz-potsdam.de/kp_index/Kp_ap_nowcast.txt"
         self._scrape_tz = ZoneInfo("Europe/Berlin")
         self._timeout = 5
-        self._line_regex = re.compile(b"\n(?P<year>\d{4}) (?P<month>\d{2}) (?P<day>\d{2}) (?P<hour>\d{2})\.\d \d{2}\.\d{2} \d+\.\d+ \d+\.\d+ +(?P<k>\d+\.\d+) +(?P<ap>\d+) (?P<is_forecast>\d)")
+        self._line_regex = re.compile(b"\n(?P<year>\d{4}) (?P<month>\d{2}) (?P<day>\d{2}) (?P<hour>\d{2})\.\d \d{2}\.\d{2} \d+\.\d+ \d+\.\d+ +(?P<k>\d+\.\d+) +(?P<ap>\d+) (?P<is_sure>\d)")
         self._forecast_interval = timedelta(hours=3)
     # end def
 
@@ -51,7 +48,7 @@ class GfzPotsdamScraper(SpecializedScraper):
 
                     # Both unused
                     ap = groups["ap"]
-                    is_forecast = groups["is_forecast"]
+                    is_sure = groups["is_sure"]
 
                     curr_forecast_time = forecast_time
                     # Create results
@@ -59,7 +56,7 @@ class GfzPotsdamScraper(SpecializedScraper):
                         result = ScrapeResult()
                         result._start_time = curr_forecast_time
                         result._end_time = curr_forecast_time + timedelta(minutes=Scraper.SCRAPE_INTERVAL)
-                        result._is_prediction = True
+                        result._is_prediction = True if is_sure == 0 else False
                         result._raw_geomag_intensity = float(k)
                         result._geomag_intensity = GeomagStormIndex(int(result._raw_geomag_intensity))
 
