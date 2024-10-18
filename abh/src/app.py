@@ -27,39 +27,41 @@ import pickle
 import telegram
 import asyncio
 
+from updates.alerter import Alerter
+
 
 # --
 # Classes
 # --
 
 
-class BotApp():
+class BotApp:
     _DB_FOLDER = "data"
     _DB_FILENAME = join(_DB_FOLDER, "chats.bin")
     _APP = None
 
     def __init__(self) -> None:
-        self._bot_user: telegram.User | None = None
-        self._chats: list[Chat] = []
-        self._handlers: list[TelegramUpdateParser] = [
+        self.bot_user: telegram.User | None = None
+        self.chats: list[Chat] = []
+        self.handlers: list[TelegramUpdateParser] = [
             TelegramMessageReceiveParser(),
             TelegramMemberUpdatedParser(),
             TelegramInlineQueryParser(),
             TelegramInlineResponseParser()
         ]
-        self._commands: list[BotCommand] = [
+        self.commands: list[BotCommand] = [
             AboutCommand(),
             ConfigureMsgCommand(),
             LatestInfoCommand(),
             StatusCommand()
         ]
-        self._scrapers: list[Scraper] = []
+        self.scrapers: list[Scraper] = []
         self.debug_mode: bool = False
     # end def
 
     def has_chat(self, uid: int) -> bool:
         found_chat = None
-        for chat in self._chats:
+        for chat in self.chats:
             if chat.uid == uid:
                 found_chat = chat
                 break
@@ -75,14 +77,14 @@ class BotApp():
             raise ValueError("Chat already added to bot instance")
         # end if
 
-        self._chats.append(chat)
+        self.chats.append(chat)
 
     # end def
 
     def get_chat(self, uid: int) -> Chat:
 
         found_chat = None
-        for chat in self._chats:
+        for chat in self.chats:
             if chat.uid == uid:
                 found_chat = chat
                 break
@@ -104,14 +106,14 @@ class BotApp():
         # end if
 
         with open(BotApp._DB_FILENAME, "wb") as db_file:
-            pickle.dump(self._chats, db_file)
+            pickle.dump(self.chats, db_file)
         # end with
 
     # end def
 
     def get_handler(self, update: telegram.Update) -> TelegramUpdateParser:
         found_handler = None
-        for handler in self._handlers:
+        for handler in self.handlers:
             if handler.can_handle(update):
                 found_handler = handler
                 break
@@ -143,19 +145,7 @@ class BotApp():
     # end def
 
     def add_scraper(self, scraper: Scraper):
-        self._scrapers.append(scraper)
-    # end def
-
-    @property
-    def bot_user(self) -> telegram.User:
-        return self._bot_user
-
-    # end def
-
-    @property
-    def commands(self) -> list[BotCommand]:
-        return self._commands[:]
-
+        self.scrapers.append(scraper)
     # end def
 
     @staticmethod
@@ -181,7 +171,7 @@ class BotApp():
             # end if
         # end with
 
-        BotApp._APP._chats = read_chat_list
+        BotApp._APP.chats = read_chat_list
     # end def
 
 
@@ -199,8 +189,8 @@ async def serve_forever(cfg: Config) -> None:
     try:
         bot = telegram.Bot(cfg[ConfigKeyType.BOT_TOKEN], local_mode=True)
         await bot.initialize()
-        app._bot_user = await bot.get_me()
-        listener_thread = BotListener(app, bot)
+        app.bot_user = await bot.get_me()
+        listener_thread = BotListener(app, bot, None)
         listener_thread.run_thread()
 
     except Exception:
@@ -223,16 +213,16 @@ def run() -> None:
     threads: list[ManagedThread] = []
 
     # noinspection PyBroadException
-    loop = None
+    bot_loop = None
     try:
         BotApp.read()
         cfg = Config.read()
         BotApp.singleton().debug_mode = cfg[ConfigKeyType.DEBUG_MODE]
         bot = telegram.Bot(cfg[ConfigKeyType.BOT_TOKEN], local_mode=True)
         
-        loop = asyncio.new_event_loop()
-        loop.run_until_complete(bot.initialize())
-        BotApp.singleton()._bot_user = loop.run_until_complete(bot.get_me())
+        bot_loop = asyncio.new_event_loop()
+        bot_loop.run_until_complete(bot.initialize())
+        BotApp.singleton().bot_user = bot_loop.run_until_complete(bot.get_me())
 
         flares_scraper = FlaresScraper()
         BotApp.singleton().add_scraper(flares_scraper)
@@ -245,8 +235,11 @@ def run() -> None:
         cme_scraper = CmeScraper()
         BotApp.singleton().add_scraper(cme_scraper)
         threads.append(cme_scraper)
-        
-        threads.append(BotListener(BotApp.singleton(), bot, loop))
+
+        alerter_loop = asyncio.new_event_loop()
+        threads.append(Alerter(BotApp.singleton(), alerter_loop))
+
+        threads.append(BotListener(BotApp.singleton(), bot, bot_loop))
 
         for thread in threads:
             thread.run_thread()
@@ -274,11 +267,11 @@ def run() -> None:
             singleton.write()
         # end if
 
-        if loop:
-            loop.close()
+        if bot_loop:
+            bot_loop.close()
         # end if
 
-        loop.close()
+        bot_loop.close()
         project()
         log("")
         log("Bot has stopped")

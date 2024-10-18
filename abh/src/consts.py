@@ -128,4 +128,5 @@ class Emojis(Enum):
     MILKY_WAY   = "\U0001F30C"
     GRAPH       = "\U0001F4CA"
     QUESTION    = "\U00002753"
+    SIREN       = "\U0001F6A8"
 # end class

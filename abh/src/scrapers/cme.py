@@ -1,23 +1,21 @@
 import json
 import math
-import re
-from json import JSONDecodeError
 from datetime import datetime, timedelta, timezone
-from ssl import SSLContext
+from json import JSONDecodeError
+from urllib.request import urlopen
+from zoneinfo import ZoneInfo
 
 from abh.src.consts import GeomagStormIndex
 from abh.src.log import error, debug
-from zoneinfo import ZoneInfo
-from urllib.request import urlopen
-from abh.src.scrapers.scraper import (Scraper,
-                                      SpecializedScraper,
-                                      ScrapeResult)
+from abh.src.scrapers.scraper import (SpecializedScraper,
+                                      ScrapeResult,
+                                      Scraper)
 
 
 class NasaCcmcScraper(SpecializedScraper):
 
     def __init__(self):
-        SpecializedScraper.__init__(self, "NASA's Community Coordinated Modelin Center")
+        SpecializedScraper.__init__(self, "NASA's Community Coordinated Modeling Center")
         self._endpoint = "https://kauai.ccmc.gsfc.nasa.gov/CMEscoreboard/WS/get/predictions?skipNoArrivalObservedCMEs=true&CMEtimeStart={date}"
         self._scrape_tz = ZoneInfo("Etc/UTC")
         self._timeout = 15
@@ -26,7 +24,7 @@ class NasaCcmcScraper(SpecializedScraper):
     def scrape(self) -> list[ScrapeResult]:
         results = []
 
-        a_week_ago = datetime.utcnow() - timedelta(days=7)
+        a_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
         url = self._endpoint.replace("{date}", a_week_ago.strftime("%Y-%m-%d"))
         scrape_data = urlopen(url, timeout=self._timeout)
 
@@ -75,28 +73,5 @@ class CmeScraper(Scraper):
                          provides_class=False)
 
         self._append_specialized_scraper(NasaCcmcScraper())
-        self._alerts = {}
-    # end def
-
-    def scrape(self):
-        super().scrape()
-
-        for result in self._results:
-            if result not in self._alerts:
-                self._alerts[result] = False
-            # end if
-        # end for
-    # end def
-
-    def get_new(self) -> list[ScrapeResult]:
-        new_cme = []
-        for scrape_result in self._alerts:
-            if not self._alerts[scrape_result]:
-                self._alerts[scrape_result] = True
-                new_cme.append(scrape_result)
-            # end if
-        # end for
-
-        return new_cme
     # end def
 # end class

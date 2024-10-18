@@ -39,8 +39,6 @@ class ConfigureMsgCommand(BotCommand):
             _SubCmd.GEOMAG_INTENSITY.value  : self._run_set_geomag_intensity,
             _SubCmd.CHOOSE_HEMISPHERE.value : self._run_set_hemisphere,
             _SubCmd.INCLUDE_DATA.value      : self._run_include_data,
-            _SubCmd.INCLUDE_IMAGES.value    : self._run_include_images,
-            _SubCmd.PREDICT_TIME.value      : self._run_predict_time
             }
     # end def
 
@@ -71,43 +69,9 @@ class ConfigureMsgCommand(BotCommand):
             chat.settings.include_data = not chat.settings.include_data
             match chat.settings.include_data:
                 case False:
-                    await update.effective_message.chat.send_message(f"{Emojis.OK.value} Bot will won't include data")
+                    await update.effective_message.chat.send_message(f"{Emojis.OK.value} Bot will won't include detailed data")
                 case True:
-                    await update.effective_message.chat.send_message(f"{Emojis.OK.value} Bot will include data of the event")
-            # end match
-        # end if
-    # end def
-
-    async def _run_include_images(self,
-                                  update: telegram.Update,
-                                  app: object,
-                                  chat: Chat,
-                                  *args) -> None:
-        # We're not expecting any args
-        if not len(args):
-            chat.settings.include_images = not chat.settings.include_images
-            match chat.settings.include_images:
-                case False:
-                    await update.effective_message.chat.send_message(f"{Emojis.OK.value} Bot won't attach images")
-                case True:
-                    await update.effective_message.chat.send_message(f"{Emojis.OK.value} Bot will attach images to the event messages")
-            # end match
-        # end if
-    # end def
-
-    async def _run_predict_time(self,
-                                update: telegram.Update,
-                                app: object,
-                                chat: Chat,
-                                *args) -> None:
-        # We're not expecting any args
-        if not len(args):
-            chat.settings.predict_time = not chat.settings.predict_time
-            match chat.settings.predict_time:
-                case False:
-                    await update.effective_message.chat.send_message(f"{Emojis.OK.value} Bot won't predict arrival time")
-                case True:
-                    await update.effective_message.chat.send_message(f"{Emojis.OK.value} Bot will try to predict arrival time")
+                    await update.effective_message.chat.send_message(f"{Emojis.OK.value} Bot will include detailed data of the event")
             # end match
         # end if
     # end def
@@ -209,18 +173,11 @@ class ConfigureMsgCommand(BotCommand):
                                                   callback_data=f"{self.cmd} {_SubCmd.SEND_UPDATES.value}")
                 ],
                 [
-                    telegram.InlineKeyboardButton(f"{Emojis.CLOCK.value} Predict time",
-                                                  callback_data=f"{self.cmd} {_SubCmd.PREDICT_TIME.value}"),
+                    telegram.InlineKeyboardButton(f"{Emojis.GRAPH.value} Include detailed data",
+                                                  callback_data=f"{self.cmd} {_SubCmd.INCLUDE_DATA.value}"),
 
                     telegram.InlineKeyboardButton(f"{Emojis.GLOBE.value} Hemisphere",
                                                   callback_data=f"{self.cmd} {_SubCmd.CHOOSE_HEMISPHERE.value}")
-                ],
-                [
-                    telegram.InlineKeyboardButton(f"{Emojis.GRAPH.value} Include data",
-                                                  callback_data=f"{self.cmd} {_SubCmd.INCLUDE_DATA.value}"),
-
-                    telegram.InlineKeyboardButton(f"{Emojis.MILKY_WAY.value} Include images",
-                                                  callback_data=f"{self.cmd} {_SubCmd.INCLUDE_IMAGES.value}")
                 ],
                 [
                     telegram.InlineKeyboardButton(f"{Emojis.WRENCH.value} Flare class trigger",

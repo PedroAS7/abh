@@ -12,6 +12,22 @@ from abh.src.scrapers.scraper import (Scraper,
                                       SpecializedScraper,
                                       ScrapeResult)
 
+OVATION_NORTH = "https://services.swpc.noaa.gov/images/animations/ovation/north/aurora_N_{date}.jpg"
+OVATION_SOUTH = "https://services.swpc.noaa.gov/images/animations/ovation/south/aurora_S_{date}.jpg"
+MAGNETOSPHERE = "https://services.swpc.noaa.gov/images/animations/geospace/velocity/latest.png"
+
+def _get_attachments(scrape_time: datetime):
+    attachments = []
+
+    # Add attachments. Images are generated every 5 minutes
+    norm_date: datetime = scrape_time - timedelta(minutes=scrape_time.minute - (scrape_time.minute % 5))
+    attachments.append(MAGNETOSPHERE)
+    attachments.append(OVATION_NORTH.replace("{date}", norm_date.strftime("%Y-%m-%d_%H%M")))
+    attachments.append(OVATION_SOUTH.replace("{date}", norm_date.strftime("%Y-%m-%d_%H%M")))
+
+    return attachments
+# end def
+
 
 class GfzPotsdamScraper(SpecializedScraper):
 
@@ -20,7 +36,7 @@ class GfzPotsdamScraper(SpecializedScraper):
         self._endpoint = "https://www-app3.gfz-potsdam.de/kp_index/Kp_ap_nowcast.txt"
         self._scrape_tz = ZoneInfo("Europe/Berlin")
         self._timeout = 5
-        self._line_regex = re.compile(b"\n(?P<year>\d{4}) (?P<month>\d{2}) (?P<day>\d{2}) (?P<hour>\d{2})\.\d \d{2}\.\d{2} \d+\.\d+ \d+\.\d+ +(?P<k>\d+\.\d+) +(?P<ap>\d+) (?P<is_sure>\d)")
+        self._line_regex = re.compile(br"\n(?P<year>\d{4}) (?P<month>\d{2}) (?P<day>\d{2}) (?P<hour>\d{2})\.\d \d{2}\.\d{2} \d+\.\d+ \d+\.\d+ +(?P<k>\d+\.\d+) +(?P<ap>\d+) (?P<is_sure>\d)")
         self._forecast_interval = timedelta(hours=3)
     # end def
 
@@ -56,9 +72,10 @@ class GfzPotsdamScraper(SpecializedScraper):
                         result = ScrapeResult()
                         result._start_time = curr_forecast_time
                         result._end_time = curr_forecast_time + timedelta(minutes=Scraper.SCRAPE_INTERVAL)
-                        result._is_prediction = True if is_sure == 0 else False
+                        result._is_prediction = False
                         result._raw_geomag_intensity = float(k)
                         result._geomag_intensity = GeomagStormIndex(int(result._raw_geomag_intensity))
+                        result._attachments.extend(_get_attachments(curr_forecast_time))
 
                         # Add scraping interval
                         curr_forecast_time = result._end_time
@@ -107,6 +124,7 @@ class NoaaPlanetaryKScraper(SpecializedScraper):
                                                        key=lambda planetary_k: planetary_k["estimated_kp"])["estimated_kp"]
                     result._geomag_intensity = GeomagStormIndex(max(planetary_ks,
                                                                     key=lambda planetary_k: planetary_k["kp_index"])["kp_index"])
+                    result._attachments.extend(_get_attachments(time_tag))
                     results.append(result)
                 # end for
 

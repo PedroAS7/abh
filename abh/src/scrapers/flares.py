@@ -16,9 +16,6 @@ class NoaaFlareScraper(SpecializedScraper):
         super().__init__("NOAA (USA) solar flare scraper")
         self._endpoint_1 = "https://services.swpc.noaa.gov/json/goes/primary/xrays-6-hour.json"
         self._endpoint_2 = "https://services.swpc.noaa.gov/json/goes/secondary/xrays-6-hour.json"
-        self._forecast_north = "https://services.swpc.noaa.gov/images/animations/ovation/north/aurora_N_{date}.jpg"
-        self._forecast_south = "https://services.swpc.noaa.gov/images/animations/ovation/south/aurora_S_{date}.jpg"
-        self._magnetosphere = "https://services.swpc.noaa.gov/images/animations/geospace/velocity/latest.png"
         self._solar_winds = "https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json"
         self._scrape_tz = ZoneInfo("Etc/UTC")
         self._timeout = 5
@@ -40,12 +37,6 @@ class NoaaFlareScraper(SpecializedScraper):
             max_intensity = max(short_range["observed_flux"], long_range["observed_flux"])
             result._raw_flare_class = max_intensity
             result._flare_class = SolarFlareClass.round_to_val(max_intensity)
-
-            # Add attachments. Images are generated every 5 minutes
-            norm_date: datetime = time_tag - timedelta(minutes=time_tag.minute - (time_tag.minute % 5))
-            result._attachments.append(self._magnetosphere)
-            result._attachments.append(self._forecast_north.replace("{date}", norm_date.strftime("%Y-%m-%d_%H%M")))
-            result._attachments.append(self._forecast_south.replace("{date}", norm_date.strftime("%Y-%m-%d_%H%M")))
 
             results.append(result)
         # end if

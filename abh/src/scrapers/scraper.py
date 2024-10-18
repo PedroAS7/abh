@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from abh.src.ManagedThread import ManagedThread
 from abh.src.consts import GeomagStormIndex
 from abh.src.consts import SolarFlareClass
@@ -20,11 +20,11 @@ class ScrapeResult:
         self._flare_class: SolarFlareClass = SolarFlareClass.OTHER
         self._hemisphere: HemisphereChoices = HemisphereChoices.BOTH
         self._attachments: list[str] = []
-        self._scrape_time: datetime = datetime.utcnow()
+        self._scrape_time: datetime = datetime.now(timezone.utc)
         self._arrival_time: datetime = datetime(1970, 1, 1)  # Yes, it'll have arrived a long time ago
         self._is_prediction: bool = False
-        self._start_time: datetime = datetime.utcnow()
-        self._end_time: datetime = datetime.utcnow()
+        self._start_time: datetime = datetime.now(timezone.utc)
+        self._end_time: datetime = datetime.now(timezone.utc)
     # end def
 
     def merge(self, other: 'ScrapeResult') -> 'ScrapeResult':
@@ -34,6 +34,7 @@ class ScrapeResult:
         self._flare_class = max(self._flare_class, other._flare_class)
         self._hemisphere |= other._hemisphere
         self.attachments.extend(other.attachments)
+        self._attachments = list(set(self.attachments))
         return self
     # end def
 
@@ -135,6 +136,7 @@ class Scraper(ManagedThread):
                  provides_intensity: bool,
                  provides_class: bool) -> None:
         super().__init__(f"Scraper '{name}'")
+        self._alerts = {}
         self._provides_intensity = provides_intensity
         self._provides_class = provides_class
         self._name = name
@@ -195,6 +197,13 @@ class Scraper(ManagedThread):
         for scraper in self._specialized_scrapers:
             self._append_result(scraper.scrape())
         # end for
+
+        for result in self._results:
+            if result not in self._alerts:
+                self._alerts[result] = False
+            # end if
+        # end for
+
         debug(f"[{self.name}] Scrape finished")
     # end def
 
@@ -256,6 +265,18 @@ class Scraper(ManagedThread):
 
         self._results = sorted(self._results, key=lambda _result: _result.start_time, reverse=True)
         self._results_cond.release()
+    # end def
+
+    def get_new(self) -> list[ScrapeResult]:
+        new_cme = []
+        for scrape_result in self._alerts:
+            if not self._alerts[scrape_result]:
+                self._alerts[scrape_result] = True
+                new_cme.append(scrape_result)
+            # end if
+        # end for
+
+        return new_cme
     # end def
 
     @property

@@ -2,6 +2,8 @@ from abh.src.consts import GeomagStormIndex
 from abh.src.consts import SolarFlareClass
 import telegram
 
+from scrapers.scraper import ScrapeResult
+
 
 #--
 # Classes
@@ -10,7 +12,9 @@ import telegram
 class ChatSettings():
 
     def __init__(self):
-        self._send_updates = False
+        self.active_intensity_alert: ScrapeResult | None = None
+        self.active_flare_alert: ScrapeResult | None = None
+        self._send_updates = True
         self._include_data = True
         self._include_images = True
         self._predict_time = True
@@ -133,11 +137,11 @@ class Chat():
         self._uid = uid
         self._admins = admins
     # end def
-    
+
     def is_admin(self, uid: int) -> bool:
         return uid in self._admins
     # end def
-    
+
     def update_admins(self, admins: tuple):
         admin_ids = []
         # Get everyone's ID
