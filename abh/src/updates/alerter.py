@@ -1,15 +1,12 @@
 import datetime
 from asyncio import get_event_loop
-from datetime import timedelta
-
 from telegram import InputMediaPhoto
 from telegram.constants import ParseMode
-
-from ManagedThread import ManagedThread
-from chat import Chat
-from consts import Emojis
+from abh.src.ManagedThread import ManagedThread
+from abh.src.chat import Chat
+from abh.src.consts import Emojis
 from abh.src.scrapers.scraper import ScrapeResult
-from log import debug
+from abh.src.log import debug
 
 
 def _sanitize_markdown(text: str) -> str:
@@ -57,10 +54,10 @@ class Alerter(ManagedThread):
 # end class
 
 
-def _trigger_alerts(max_intensity_alert: ScrapeResult,
-                    max_flare_class_alert: ScrapeResult,
-                    chat: Chat,
-                    app):
+async def _trigger_alerts(max_intensity_alert: ScrapeResult,
+                          max_flare_class_alert: ScrapeResult,
+                          chat: Chat,
+                          app):
     bot = app.bot_user.get_bot()
     loop = get_event_loop()
 
@@ -86,10 +83,17 @@ A solar storm has reached Earth
             """
         # end if
 
-        message = loop.run_until_complete(bot.send_message(chat.uid,
+        # message = loop.run_until_complete(bot.send_message(chat.uid,
+        #                                                    _sanitize_markdown(message_text),
+        #                                                    ParseMode.MARKDOWN_V2,
+        #                                                    disable_notification=False))
+
+        debug("-> SENDING MESSAGE")
+        message = await bot.send_message(chat.uid,
                                                            _sanitize_markdown(message_text),
                                                            ParseMode.MARKDOWN_V2,
-                                                           disable_notification=False))
+                                                           disable_notification=False)
+        debug("-> MESSAGE SENT")
 
         if len(max_intensity_alert.attachments):
             loop.run_until_complete(message.reply_media_group(
@@ -110,10 +114,17 @@ A new solar flare has been detected
 *Detection time*: {max_flare_class_alert.start_time.strftime("%c")} UTC
         """
 
-        loop.run_until_complete(bot.send_message(chat.uid,
+        # loop.run_until_complete(bot.send_message(chat.uid,
+        #                                          _sanitize_markdown(message_text),
+        #                                          ParseMode.MARKDOWN_V2,
+        #                                          disable_notification=False))
+
+        debug("-> SENDING MESSAGE 2")
+        await bot.send_message(chat.uid,
                                                  _sanitize_markdown(message_text),
                                                  ParseMode.MARKDOWN_V2,
-                                                 disable_notification=False))
+                                                 disable_notification=False)
+        debug("-> MESSAGE SENT 2")
     # end if
 
 
@@ -151,6 +162,10 @@ async def _manage_alerts(alerts: list[ScrapeResult],
         # end if
     # end for
 
+    # TODO: remove
+    chat.settings.active_intensity_alert = None
+    chat.settings.active_flare_alert = None
+
     # Removed expired alerts, or don't alert if less than current alert
     if max_intensity_alert is not None:
         if max_intensity_alert.intensity < chat.settings.min_geomag_value \
@@ -169,10 +184,10 @@ async def _manage_alerts(alerts: list[ScrapeResult],
     # end for
 
     if max_intensity_alert is not None or max_flare_class_alert is not None:
-        _trigger_alerts(max_intensity_alert,
-                        max_flare_class_alert,
-                        chat,
-                        app)
+        await _trigger_alerts(max_intensity_alert,
+                              max_flare_class_alert,
+                              chat,
+                              app)
     # end if
 # end def
 

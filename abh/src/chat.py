@@ -1,8 +1,7 @@
 from abh.src.consts import GeomagStormIndex
 from abh.src.consts import SolarFlareClass
+from abh.src.scrapers.scraper import ScrapeResult
 import telegram
-
-from scrapers.scraper import ScrapeResult
 
 
 #--

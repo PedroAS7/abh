@@ -23,11 +23,11 @@ from os import mkdir
 from os.path import join
 from os.path import exists
 from traceback import format_exc
+from abh.src.updates.alerter import Alerter
 import pickle
 import telegram
 import asyncio
 
-from updates.alerter import Alerter
 
 
 # --
