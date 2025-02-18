@@ -83,17 +83,10 @@ A solar storm has reached Earth
             """
         # end if
 
-        # message = loop.run_until_complete(bot.send_message(chat.uid,
-        #                                                    _sanitize_markdown(message_text),
-        #                                                    ParseMode.MARKDOWN_V2,
-        #                                                    disable_notification=False))
-
-        debug("-> SENDING MESSAGE")
         message = await bot.send_message(chat.uid,
-                                                           _sanitize_markdown(message_text),
-                                                           ParseMode.MARKDOWN_V2,
-                                                           disable_notification=False)
-        debug("-> MESSAGE SENT")
+                                         _sanitize_markdown(message_text),
+                                         ParseMode.MARKDOWN_V2,
+                                         disable_notification=False)
 
         if len(max_intensity_alert.attachments):
             loop.run_until_complete(message.reply_media_group(
@@ -114,20 +107,47 @@ A new solar flare has been detected
 *Detection time*: {max_flare_class_alert.start_time.strftime("%c")} UTC
         """
 
-        # loop.run_until_complete(bot.send_message(chat.uid,
-        #                                          _sanitize_markdown(message_text),
-        #                                          ParseMode.MARKDOWN_V2,
-        #                                          disable_notification=False))
-
-        debug("-> SENDING MESSAGE 2")
         await bot.send_message(chat.uid,
-                                                 _sanitize_markdown(message_text),
-                                                 ParseMode.MARKDOWN_V2,
-                                                 disable_notification=False)
-        debug("-> MESSAGE SENT 2")
+                               _sanitize_markdown(message_text),
+                               ParseMode.MARKDOWN_V2,
+                               disable_notification=False)
     # end if
 
 
+# end def
+
+
+def _get_next_geomag_alert(chat, selected_alert):
+
+    # No selected alert? No next alert.
+    if selected_alert is None:
+        return None
+    # end if
+
+    # If the currently-set alert is stronger than this one, no alert is triggered
+    active_alert = chat.settings.active_intensity_alert
+    if active_alert is not None and selected_alert.intensity <= active_alert.intensity:
+        return None
+    # end for
+
+    return selected_alert
+# end def
+
+
+def _get_next_flare_alert(chat, selected_alert):
+
+    # No selected alert? No next alert.
+    if selected_alert is None:
+        return None
+    # end if
+
+    # If the currently-set alert is stronger than this one, no alert is triggered
+    active_alert = chat.settings.active_flare_alert
+    if active_alert is not None and selected_alert.flare_class <= active_alert.intensity:
+        return None
+    # end for
+
+    return selected_alert
 # end def
 
 
@@ -137,51 +157,50 @@ async def _manage_alerts(alerts: list[ScrapeResult],
     max_intensity_alert: ScrapeResult | None = None
     max_flare_class_alert: ScrapeResult | None = None
 
+    # If most recent alert is outside of trigger levels, we'll remove the currently-set alerts
+    most_recent = alerts[-1]
+
+    if most_recent.flare_class < chat.settings.min_flare_class:
+        chat.settings.active_flare_alert = None
+    # endif
+
+    if most_recent.intensity < chat.settings.min_geomag_value:
+        chat.settings.active_intensity_alert = None
+    # endif
+
     for alert in alerts:
 
-        # Alert is too old
-        if alert.start_time.timestamp() < (
-                datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=5)).timestamp():
+        # Not strong enough to trigger
+        if alert.intensity < chat.settings.min_geomag_value \
+        or alert.flare_class < chat.settings.min_flare_class:
             continue
         # end if
 
         correct_hemisphere = (alert.hemisphere & chat.settings.northern_hemisphere == chat.settings.northern_hemisphere) \
                           or (alert.hemisphere & chat.settings.southern_hemisphere == chat.settings.southern_hemisphere)
 
-        higher_intensity_than_prev = not max_intensity_alert or max_intensity_alert.intensity < alert.intensity
-        bigger_flare_than_prev = not max_flare_class_alert or max_flare_class_alert.flare_class < alert.flare_class
+        # We'll skip alerts that wouldn't trigger for the selected hemisphere
+        if not correct_hemisphere:
+            continue
+        # end if
 
-        if higher_intensity_than_prev \
-                and correct_hemisphere:
+        higher_intensity_than_prev = not max_intensity_alert   or max_intensity_alert.intensity < alert.intensity
+        bigger_flare_than_prev     = not max_flare_class_alert or max_flare_class_alert.flare_class < alert.flare_class
+
+        # Keep track of alert because it's more intense than the previous one
+        if higher_intensity_than_prev:
             max_intensity_alert = alert
         # end if
 
-        if bigger_flare_than_prev \
-                and correct_hemisphere:
+        # Keep track of alert because the flare is bigger than the previous one
+        if bigger_flare_than_prev:
             max_flare_class_alert = alert
         # end if
     # end for
 
-    # TODO: remove
-    chat.settings.active_intensity_alert = None
-    chat.settings.active_flare_alert = None
-
-    # Removed expired alerts, or don't alert if less than current alert
-    if max_intensity_alert is not None:
-        if max_intensity_alert.intensity < chat.settings.min_geomag_value \
-                or (chat.settings.active_intensity_alert is not None
-                    and max_intensity_alert.intensity <= chat.settings.active_intensity_alert.intensity):
-            max_intensity_alert = None
-        # end if
-    # end for
-
-    if max_flare_class_alert is not None:
-        if max_flare_class_alert.flare_class < chat.settings.min_flare_class \
-                or (chat.settings.active_flare_alert is not None
-                    and max_flare_class_alert.flare_class <= chat.settings.active_flare_alert.flare_class):
-            max_flare_class_alert = None
-        # end if
-    # end for
+    # Check whether these alerts are worth notifying over or not
+    max_intensity_alert   = _get_next_geomag_alert(chat, max_intensity_alert)
+    max_flare_class_alert =  _get_next_flare_alert(chat, max_flare_class_alert)
 
     if max_intensity_alert is not None or max_flare_class_alert is not None:
         await _trigger_alerts(max_intensity_alert,
@@ -195,8 +214,6 @@ async def _manage_alerts(alerts: list[ScrapeResult],
 def _t_start(alerter: Alerter) -> None:
     loop = alerter.loop
     loop.run_until_complete(_t_run_alerter(alerter))
-
-
 # end def
 
 
@@ -211,9 +228,18 @@ async def _t_run_alerter(alerter: Alerter):
         # end for
 
         if len(alerts):
+
+            # Only keep alerts that are recent enough
+            _nowMinus5h = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=5)).timestamp()
+            recent_alerts = [alert for alert in alerts if alert.start_time.timestamp() >= _nowMinus5h]
+            del alerts
+
+            # Sort by date, oldest to newest
+            recent_alerts = sorted(recent_alerts, key=lambda alert: alert.start_time.timestamp())
+
             # Only iterate through non-muted chats
             for chat in [chat for chat in alerter.app.chats if chat.settings.send_updates]:
-                await _manage_alerts(alerts, chat, alerter.app)
+                await _manage_alerts(recent_alerts, chat, alerter.app)
             # end for
         # end if
 

@@ -17,7 +17,7 @@ class ClassWithHelp():
 
 class SolarFlareClass(ClassWithHelp, IntEnum):
     # Class is 10 ^ (val / 10)
-    OTHER = 0
+    OTHER = -99
     B1  = -70
     B5  = -65
     C1  = -60
