@@ -1,6 +1,9 @@
 from abh.src.cmds.botCommand import BotCommand
 from abh.src.consts import Emojis
-from abh.src.log import *
+from abh.src import (APP_NAME,
+                     APP_AUTHORS,
+                     APP_VERSION,
+                     APP_WEBSITE)
 import telegram
 
 class AboutCommand(BotCommand):
@@ -21,8 +24,12 @@ class AboutCommand(BotCommand):
         if len(args) != 1:
             await update.message.reply_text("Invalid command!")
         else:
-            # TODO: show latest information
-            pass
+            reply_message = f"""
+{APP_NAME} version {APP_VERSION}
+Created by {','.join(APP_AUTHORS)}
+Project information at {APP_WEBSITE}
+"""
+            await update.message.reply_text(reply_message)
         # end if
     # end def
 # end class
