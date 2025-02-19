@@ -27,17 +27,6 @@ class ScrapeResult:
         self._end_time: datetime = datetime.now(timezone.utc)
     # end def
 
-    def merge(self, other: 'ScrapeResult') -> 'ScrapeResult':
-        self._raw_geomag_intensity = max(self._raw_geomag_intensity, other._raw_geomag_intensity)
-        self._geomag_intensity = max(self._geomag_intensity, other._geomag_intensity)
-        self._raw_flare_class = max(self._raw_flare_class, other._raw_flare_class)
-        self._flare_class = max(self._flare_class, other._flare_class)
-        self._hemisphere |= other._hemisphere
-        self.attachments.extend(other.attachments)
-        self._attachments = list(set(self.attachments))
-        return self
-    # end def
-
     @property
     def raw_geomag_intensity(self) -> float:
         return self._raw_geomag_intensity
@@ -104,6 +93,42 @@ class ScrapeResult:
     @property
     def end_time(self) -> datetime:
         return self._end_time
+    # end def
+
+    @staticmethod
+    def _merge_dates(date1: datetime, date2: datetime) -> datetime:
+
+        if date1.year == 1970:
+            return date2
+        # end if
+
+        if date2.year == 1970:
+            return date1
+        # end if
+
+        return datetime.fromtimestamp(min(date1.astimezone(timezone.utc).timestamp(),
+                                          date2.astimezone(timezone.utc).timestamp()),
+                                      timezone.utc)
+    # end def
+
+    def merge(self, other: 'ScrapeResult') -> 'ScrapeResult':
+
+        if other is None:
+            return self
+        # end if
+
+        merged = ScrapeResult()
+        merged._end_time            = ScrapeResult._merge_dates(other.end_time, self.end_time)
+        merged._scrape_time         = ScrapeResult._merge_dates(other.scrape_time, self.scrape_time)
+        merged._start_time          = ScrapeResult._merge_dates(other.start_time, self.start_time)
+        merged._arrival_time        = ScrapeResult._merge_dates(other.arrival_time, self.arrival_time)
+        merged._geomag_intensity    = max(other.raw_geomag_intensity, self.raw_flare_class)
+        merged._flare_class         = max(other.flare_class, self.flare_class)
+        merged._raw_geomag_intensity= max(other.raw_geomag_intensity, self.raw_flare_class)
+        merged._is_prediction       = other.is_prediction or self.is_prediction
+        merged._attachments         = other.attachments[:].extend(self.attachments)
+        merged._hemisphere          = other.hemisphere | self.hemisphere
+        return merged
     # end def
 # end def
 
