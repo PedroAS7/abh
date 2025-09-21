@@ -153,7 +153,7 @@ class ConfigureMsgCommand(BotCommand):
                     warn(f"Got an unknown command '{args[ConfigureMsgCommand._CMD_INDEX]} {args[ConfigureMsgCommand._SUBCMD_INDEX]}'")
                 # end if
             else:
-                update.effective_message.reply_text("You must be an admin to configure the bot")
+                await update.effective_message.reply_text("You must be an admin to configure the bot")
             # end if
         # end if
     # end def

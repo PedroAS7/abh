@@ -25,31 +25,37 @@ class ScrapeResult:
         self._is_prediction: bool = False
         self._start_time: datetime = datetime.now(timezone.utc)
         self._end_time: datetime = datetime.now(timezone.utc)
+
     # end def
 
     @property
     def raw_geomag_intensity(self) -> float:
         return self._raw_geomag_intensity
+
     # end def
 
     @property
     def intensity(self) -> GeomagStormIndex:
         return self._geomag_intensity
+
     # end def
 
     @property
     def raw_flare_class(self) -> float:
         return self._raw_flare_class
+
     # end def
 
     @property
     def flare_class(self) -> SolarFlareClass:
         return self._flare_class
+
     # end def
 
     @property
     def hemisphere(self) -> HemisphereChoices:
         return self._hemisphere
+
     # end def
 
     @property
@@ -63,36 +69,43 @@ class ScrapeResult:
                 f"E:{self.end_time.timestamp()},"
                 f"T:{self.scrape_time.timestamp()},"
                 f"A:{self.arrival_time.timestamp()}")
+
     # end def
 
     @property
     def attachments(self) -> list:
         return self._attachments
+
     # end def
 
     @property
     def scrape_time(self) -> datetime:
         return self._scrape_time
+
     # end def
 
     @property
     def arrival_time(self) -> datetime:
         return self._arrival_time
+
     # end def
 
     @property
     def is_prediction(self) -> bool:
         return self._is_prediction
+
     # end def
 
     @property
     def start_time(self) -> datetime:
         return self._start_time
+
     # end def
 
     @property
     def end_time(self) -> datetime:
         return self._end_time
+
     # end def
 
     @staticmethod
@@ -109,6 +122,7 @@ class ScrapeResult:
         return datetime.fromtimestamp(min(date1.astimezone(timezone.utc).timestamp(),
                                           date2.astimezone(timezone.utc).timestamp()),
                                       timezone.utc)
+
     # end def
 
     def merge(self, other: 'ScrapeResult') -> 'ScrapeResult':
@@ -118,18 +132,21 @@ class ScrapeResult:
         # end if
 
         merged = ScrapeResult()
-        merged._end_time            = ScrapeResult._merge_dates(other.end_time, self.end_time)
-        merged._scrape_time         = ScrapeResult._merge_dates(other.scrape_time, self.scrape_time)
-        merged._start_time          = ScrapeResult._merge_dates(other.start_time, self.start_time)
-        merged._arrival_time        = ScrapeResult._merge_dates(other.arrival_time, self.arrival_time)
-        merged._geomag_intensity    = max(other.raw_geomag_intensity, self.raw_flare_class)
-        merged._flare_class         = max(other.flare_class, self.flare_class)
-        merged._raw_geomag_intensity= max(other.raw_geomag_intensity, self.raw_flare_class)
-        merged._is_prediction       = other.is_prediction or self.is_prediction
-        merged._attachments         = other.attachments[:].extend(self.attachments)
-        merged._hemisphere          = other.hemisphere | self.hemisphere
+        merged._end_time = ScrapeResult._merge_dates(other.end_time, self.end_time)
+        merged._scrape_time = ScrapeResult._merge_dates(other.scrape_time, self.scrape_time)
+        merged._start_time = ScrapeResult._merge_dates(other.start_time, self.start_time)
+        merged._arrival_time = ScrapeResult._merge_dates(other.arrival_time, self.arrival_time)
+        merged._geomag_intensity = other._geomag_intensity if other._geomag_intensity.value > self._geomag_intensity.value else self._geomag_intensity.value
+        merged._flare_class = max(other.flare_class, self.flare_class)
+        merged._raw_geomag_intensity = max(other.raw_geomag_intensity, self.raw_flare_class)
+        merged._is_prediction = other.is_prediction or self.is_prediction
+        merged._attachments = other.attachments[:].extend(self.attachments) if self.attachments else other.attachments[
+                                                                                                     :]
+        merged._hemisphere = other.hemisphere | self.hemisphere
         return merged
     # end def
+
+
 # end def
 
 
@@ -137,6 +154,7 @@ class SpecializedScraper:
     def __init__(self,
                  name: str) -> None:
         self._name = name
+
     # end def
 
     """
@@ -144,15 +162,17 @@ class SpecializedScraper:
     Note: returned list must contain scrape results of (Scraper.SCRAPE_INTERVAL) minutes of interval.
     Scraper is not at fault if results get messy
     """
+
     def scrape(self) -> list[ScrapeResult]:
         raise NotImplementedError()
     # end def
+
+
 # end def
 
 
 class Scraper(ManagedThread):
-
-    SCRAPE_INTERVAL = 5.0 # 5 minutes
+    SCRAPE_INTERVAL = 5.0  # 5 minutes
     SCRAPE_INTERVAL_S = 60.0 * SCRAPE_INTERVAL
 
     def __init__(self,
@@ -170,16 +190,19 @@ class Scraper(ManagedThread):
         self._specialized_scrapers: list[SpecializedScraper] = []
         self._results: list[ScrapeResult] = []
         self._results_cond: threading.Condition = threading.Condition()
+
     # end def
 
     def run_thread(self, **kwargs) -> None:
         self.load_history()
         super().run_thread(_t_scraper)
+
     # end def
 
     def stop_thread(self) -> None:
         super().stop_thread()
         self.save_history()
+
     # end def
 
     def load_history(self) -> None:
@@ -195,12 +218,15 @@ class Scraper(ManagedThread):
 
         with open(self._history_filename, "rb") as history_file:
             loaded_list = pickle.load(history_file)
-            if not isinstance(loaded_list, list) or any([not isinstance(result, ScrapeResult) for result in loaded_list]):
+            if not isinstance(loaded_list, list) or any(
+                    [not isinstance(result, ScrapeResult) for result in loaded_list]):
                 raise RuntimeError("Invalid history file")
             # end if
 
             self._results.extend(loaded_list)
         # end with
+        log(f"[{self.name}] Loaded scrape history")
+
     # end def
 
     def save_history(self) -> None:
@@ -215,6 +241,8 @@ class Scraper(ManagedThread):
         # end with
 
         self._results_cond.release()
+        log(f"[{self.name}] Saved scrape history")
+
     # end def
 
     def scrape(self):
@@ -230,66 +258,64 @@ class Scraper(ManagedThread):
         # end for
 
         debug(f"[{self.name}] Scrape finished")
+
     # end def
 
     def get_new(self) -> list[ScrapeResult]:
         return list()
+
     # end def
 
     def _append_specialized_scraper(self, scraper: SpecializedScraper) -> None:
         self._specialized_scrapers.append(scraper)
+
     # end def
 
     def _append_result(self, results: list[ScrapeResult]) -> None:
 
-        lock_acquired = self._results_cond.acquire(blocking=True,
-                                                   timeout=Scraper._RESULTS_COND_TIMEOUT)
+        with self._results_cond:
 
-        if not lock_acquired:
-            raise RuntimeError("Failed to acquire lock to get append latest result")
-        # end if
+            results = sorted(results, key=lambda scrape_result: scrape_result.start_time, reverse=True)
+            earliest_result = self._results[-1] if len(self._results) > 0 else None
+            latest_result = self._results[0] if len(self._results) > 0 else None
 
-        results = sorted(results, key=lambda scrape_result: scrape_result.start_time, reverse=True)
-        earliest_result = self._results[-1] if len(self._results) > 0 else None
-        latest_result = self._results[0] if len(self._results) > 0 else None
-        
-        earlier_to_new_results_i = 0
-        if len(results):
-            earliest_new_result = results[-1]
+            earlier_to_new_results_i = 0
+            if len(results):
+                earliest_new_result = results[-1]
 
-            for i in range(len(self._results) - 1, -1, -1):
-                if self._results[i].start_time < earliest_new_result.start_time:
-                    earlier_to_new_results_i = i
-                    break
-                # end if
-            # end for
-        # end if
-
-        for result in results:
-            
-            if not latest_result or result.start_time >= latest_result.end_time:
-                self._results.append(result)
-                continue
+                for i in range(len(self._results) - 1, -1, -1):
+                    if self._results[i].start_time.timestamp() < earliest_new_result.start_time.timestamp():
+                        earlier_to_new_results_i = i
+                        break
+                    # end if
+                # end for
             # end if
 
-            if not earliest_result or result.end_time <= earliest_result.start_time:
-                self._results.append(result)
-                continue
-            # end if
-            
-            # Merge scrapes with overlapping times
-            for i in range(earlier_to_new_results_i, len(self._results)):
-                reg_result = self._results[i]
+            for result in results:
 
-                if reg_result.start_time <= result.start_time < reg_result.end_time:
-                    self._results[i] = reg_result.merge(result)
-                    break
+                if not latest_result or result.start_time.timestamp() >= latest_result.end_time.timestamp():
+                    self._results.append(result)
+                    continue
                 # end if
-            # end for
-        # end for
 
-        self._results = sorted(self._results, key=lambda _result: _result.start_time, reverse=True)
-        self._results_cond.release()
+                if not earliest_result or result.end_time.timestamp() <= earliest_result.start_time.timestamp():
+                    self._results.append(result)
+                    continue
+                # end if
+
+                # Merge scrapes with overlapping times
+                for i in range(earlier_to_new_results_i, len(self._results)):
+                    reg_result = self._results[i]
+
+                    if reg_result.start_time.timestamp() <= result.start_time.timestamp() < reg_result.end_time.timestamp():
+                        self._results[i] = reg_result.merge(result)
+                        break
+                    # end if
+                # end for
+            # end for
+
+            self._results = sorted(self._results, key=lambda _result: _result.start_time, reverse=True)
+        # end with
     # end def
 
     def get_new(self) -> list[ScrapeResult]:
@@ -302,36 +328,39 @@ class Scraper(ManagedThread):
         # end for
 
         return new_cme
+
     # end def
 
     @property
     def name(self):
         return self._name
+
     # end def
 
     @property
     def provides_intensity(self) -> bool:
         return self._provides_intensity
+
     # end def
 
     @property
     def provides_class(self) -> bool:
         return self._provides_class
+
     # end def
 
     @property
     def latest(self) -> ScrapeResult | None:
-        lock_acquired = self._results_cond.acquire(blocking=True,
-                                                   timeout=Scraper._RESULTS_COND_TIMEOUT)
-        if not lock_acquired:
-            raise RuntimeError("Failed to acquire lock to get latest result")
-        # end if
 
-        latest_result = self._results[-1] if len(self._results) else None
-        self._results_cond.release()
-
-        return latest_result
+        with self._results_cond:
+            latest_result = self._results[-1] if len(self._results) else None
+            self._results_cond.release()
+    
+            return latest_result
+        # end with
     # end def
+
+
 # end class
 
 

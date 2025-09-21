@@ -27,6 +27,7 @@ from abh.src.updates.alerter import Alerter
 import pickle
 import telegram
 import asyncio
+import signal
 
 
 
@@ -182,6 +183,27 @@ class BotApp:
 # Functions
 # --
 
+def graceful_stop(threads: list, bot_loop) -> None:
+
+    for thread in threads:
+        thread.stop_thread()
+    # end for
+
+    singleton = BotApp.singleton()
+    if singleton:
+        singleton.write()
+    # end if
+
+    if bot_loop:
+        bot_loop.close()
+    # end if
+
+    project()
+    log("")
+    log("Bot has stopped")
+    exit(0)
+# end def
+
 async def serve_forever(cfg: Config) -> None:
     bot: telegram.Bot | None = None
     app = BotApp.singleton()
@@ -215,6 +237,9 @@ def run() -> None:
     # noinspection PyBroadException
     bot_loop = None
     try:
+        signal.signal(signal.SIGINT, lambda _1,_2: graceful_stop(threads, bot_loop))
+        signal.signal(signal.SIGTERM, lambda _1,_2: graceful_stop(threads, bot_loop))
+        
         BotApp.read()
         cfg = Config.read()
         BotApp.singleton().debug_mode = cfg[ConfigKeyType.DEBUG_MODE]
@@ -257,25 +282,6 @@ def run() -> None:
         error(format_exc())
 
     finally:
-
-        for thread in threads:
-            thread.stop_thread()
-        # end for
-
-        singleton = BotApp.singleton()
-        if singleton:
-            singleton.write()
-        # end if
-
-        if bot_loop:
-            bot_loop.close()
-        # end if
-
-        bot_loop.close()
-        project()
-        log("")
-        log("Bot has stopped")
+        graceful_stop(threads, bot_loop)
     # end try
-
-    pass
 # end def
