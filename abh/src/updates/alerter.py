@@ -1,12 +1,14 @@
 import datetime
 from asyncio import get_event_loop
+
 from telegram import InputMediaPhoto
 from telegram.constants import ParseMode
-from abh.src.ManagedThread import ManagedThread
+
+from abh.src.thread import ManagedThread
 from abh.src.chat import Chat
 from abh.src.consts import Emojis
-from abh.src.scrapers.scraper import ScrapeResult
 from abh.src.log import debug
+from abh.src.scrapers.scraper import ScrapeResult
 
 
 def _sanitize_markdown(text: str) -> str:
@@ -118,7 +120,6 @@ A new solar flare has been detected
 
 
 def _get_next_geomag_alert(chat, selected_alert):
-
     # No selected alert? No next alert.
     if selected_alert is None:
         return None
@@ -131,11 +132,12 @@ def _get_next_geomag_alert(chat, selected_alert):
     # end for
 
     return selected_alert
+
+
 # end def
 
 
 def _get_next_flare_alert(chat, selected_alert):
-
     # No selected alert? No next alert.
     if selected_alert is None:
         return None
@@ -148,6 +150,8 @@ def _get_next_flare_alert(chat, selected_alert):
     # end for
 
     return selected_alert
+
+
 # end def
 
 
@@ -172,20 +176,21 @@ async def _manage_alerts(alerts: list[ScrapeResult],
 
         # Not strong enough to trigger
         if alert.intensity < chat.settings.min_geomag_value \
-        or alert.flare_class < chat.settings.min_flare_class:
+                or alert.flare_class < chat.settings.min_flare_class:
             continue
         # end if
 
         correct_hemisphere = (alert.hemisphere & chat.settings.northern_hemisphere == chat.settings.northern_hemisphere) \
-                          or (alert.hemisphere & chat.settings.southern_hemisphere == chat.settings.southern_hemisphere)
+                             or (
+                                         alert.hemisphere & chat.settings.southern_hemisphere == chat.settings.southern_hemisphere)
 
         # We'll skip alerts that wouldn't trigger for the selected hemisphere
         if not correct_hemisphere:
             continue
         # end if
 
-        higher_intensity_than_prev = not max_intensity_alert   or max_intensity_alert.intensity < alert.intensity
-        bigger_flare_than_prev     = not max_flare_class_alert or max_flare_class_alert.flare_class < alert.flare_class
+        higher_intensity_than_prev = not max_intensity_alert or max_intensity_alert.intensity < alert.intensity
+        bigger_flare_than_prev = not max_flare_class_alert or max_flare_class_alert.flare_class < alert.flare_class
 
         # Keep track of alert because it's more intense than the previous one
         if higher_intensity_than_prev:
@@ -199,8 +204,8 @@ async def _manage_alerts(alerts: list[ScrapeResult],
     # end for
 
     # Check whether these alerts are worth notifying over or not
-    max_intensity_alert   = _get_next_geomag_alert(chat, max_intensity_alert)
-    max_flare_class_alert =  _get_next_flare_alert(chat, max_flare_class_alert)
+    max_intensity_alert = _get_next_geomag_alert(chat, max_intensity_alert)
+    max_flare_class_alert = _get_next_flare_alert(chat, max_flare_class_alert)
 
     if max_intensity_alert is not None or max_flare_class_alert is not None:
         await _trigger_alerts(max_intensity_alert,
@@ -208,12 +213,16 @@ async def _manage_alerts(alerts: list[ScrapeResult],
                               chat,
                               app)
     # end if
+
+
 # end def
 
 
 def _t_start(alerter: Alerter) -> None:
     loop = alerter.loop
     loop.run_until_complete(_t_run_alerter(alerter))
+
+
 # end def
 
 

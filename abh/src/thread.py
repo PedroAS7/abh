@@ -1,9 +1,9 @@
-from abh.src.log import *
 import threading
+
+from abh.src.log import *
 
 
 class ManagedThread:
-
     _THREAD_JOIN_TIMEOUT = 5.0
     _RESULTS_COND_TIMEOUT = 2.0
 
@@ -12,6 +12,7 @@ class ManagedThread:
         self._running: bool = False
         self._thread: threading.Thread | None = None
         self._thread_evt: threading.Event = threading.Event()
+
     # end def
 
     def run_thread(self, t_func: callable = None) -> None:
@@ -29,6 +30,7 @@ class ManagedThread:
         self._thread.start()
         self._running = True
         debug(f"Thread '{self._name}' started")
+
     # end def
 
     def stop_thread(self) -> None:
@@ -49,16 +51,18 @@ class ManagedThread:
                     debug(f"Thread '{self._name}' stopped")
                     break
                 # end if
-                
+
                 warn(f"Thread '{self._name}' failed to stop. Retrying")
             # end while
         except TimeoutError:
             error(f"Failed to stop thread '{self._name}'")
         # end try
+
     # end def
 
     def keep_alive(self) -> bool:
         return not self._thread_evt.is_set()
+
     # end def
 
     def event_wait(self, timeout) -> bool:

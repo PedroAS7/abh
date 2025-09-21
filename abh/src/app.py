@@ -1,5 +1,15 @@
+import asyncio
+import pickle
+import signal
+from os import mkdir
+from os.path import exists
+from os.path import join
 from time import sleep
-from abh.src.ManagedThread import ManagedThread
+from traceback import format_exc
+
+import telegram
+
+from abh.src.thread import ManagedThread
 from abh.src.chat import Chat
 from abh.src.cmds.botCommand import BotCommand
 from abh.src.cmds.msg.aboutCommand import AboutCommand
@@ -8,27 +18,18 @@ from abh.src.cmds.msg.latestInfoCommand import LatestInfoCommand
 from abh.src.cmds.msg.statusCommand import StatusCommand
 from abh.src.config import Config
 from abh.src.config import ConfigKeyType
+from abh.src.log import *
 from abh.src.scrapers.cme import CmeScraper
 from abh.src.scrapers.flares import FlaresScraper
 from abh.src.scrapers.geomag import GeomagScraper
 from abh.src.scrapers.scraper import Scraper
-from abh.src.updates.listener import BotListener
-from abh.src.updates.parser import TelegramUpdateParser
-from abh.src.updates.messageReceiveParser import TelegramMessageReceiveParser
-from abh.src.updates.memberUpdatedParser import TelegramMemberUpdatedParser
+from abh.src.updates.alerter import Alerter
 from abh.src.updates.inlineQueryParser import TelegramInlineQueryParser
 from abh.src.updates.inlineResponseParser import TelegramInlineResponseParser
-from abh.src.log import *
-from os import mkdir
-from os.path import join
-from os.path import exists
-from traceback import format_exc
-from abh.src.updates.alerter import Alerter
-import pickle
-import telegram
-import asyncio
-import signal
-
+from abh.src.updates.listener import BotListener
+from abh.src.updates.memberUpdatedParser import TelegramMemberUpdatedParser
+from abh.src.updates.messageReceiveParser import TelegramMessageReceiveParser
+from abh.src.updates.parser import TelegramUpdateParser
 
 
 # --
@@ -58,6 +59,7 @@ class BotApp:
         ]
         self.scrapers: list[Scraper] = []
         self.debug_mode: bool = False
+
     # end def
 
     def has_chat(self, uid: int) -> bool:
@@ -143,10 +145,12 @@ class BotApp:
         # end if
 
         return found_command
+
     # end def
 
     def add_scraper(self, scraper: Scraper):
         self.scrapers.append(scraper)
+
     # end def
 
     @staticmethod
@@ -184,7 +188,6 @@ class BotApp:
 # --
 
 def graceful_stop(threads: list, bot_loop) -> None:
-
     for thread in threads:
         thread.stop_thread()
     # end for
@@ -202,6 +205,8 @@ def graceful_stop(threads: list, bot_loop) -> None:
     log("")
     log("Bot has stopped")
     exit(0)
+
+
 # end def
 
 async def serve_forever(cfg: Config) -> None:
@@ -223,6 +228,8 @@ async def serve_forever(cfg: Config) -> None:
             await bot.shutdown()
         # end if
     # end try
+
+
 # end def
 
 
@@ -237,14 +244,14 @@ def run() -> None:
     # noinspection PyBroadException
     bot_loop = None
     try:
-        signal.signal(signal.SIGINT, lambda _1,_2: graceful_stop(threads, bot_loop))
-        signal.signal(signal.SIGTERM, lambda _1,_2: graceful_stop(threads, bot_loop))
-        
+        signal.signal(signal.SIGINT, lambda _1, _2: graceful_stop(threads, bot_loop))
+        signal.signal(signal.SIGTERM, lambda _1, _2: graceful_stop(threads, bot_loop))
+
         BotApp.read()
         cfg = Config.read()
         BotApp.singleton().debug_mode = cfg[ConfigKeyType.DEBUG_MODE]
         bot = telegram.Bot(cfg[ConfigKeyType.BOT_TOKEN], local_mode=True)
-        
+
         bot_loop = asyncio.new_event_loop()
         bot_loop.run_until_complete(bot.initialize())
         BotApp.singleton().bot_user = bot_loop.run_until_complete(bot.get_me())

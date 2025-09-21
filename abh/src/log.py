@@ -1,8 +1,9 @@
 from sys import platform
-from colorama import just_fix_windows_console
-from colorama import Fore
+
 from colorama import Back
+from colorama import Fore
 from colorama import Style
+from colorama import just_fix_windows_console
 
 # Fix Windows terminal colors
 if platform.startswith("win"):
@@ -29,29 +30,39 @@ def log(*what: object,
         end: str | None = "\n") -> None:
     indent_str = '\t' * _indent_level if _indent_level > 0 else ''
     print(fore, back, style, indent_str, *what, Style.RESET_ALL, sep=sep, end=end)
+
+
 # end def
 
 def error(*what: object,
           sep: str | None = " ",
           end: str | None = "\n"):
     log(*what, fore=Fore.RED, back=Back.RESET, style=Style.BRIGHT, sep=sep, end=end)
+
+
 # end def
 
 def warn(*what: object,
          sep: str | None = " ",
          end: str | None = "\n"):
     log(*what, fore=Fore.BLACK, back=Back.YELLOW, style=Style.BRIGHT, sep=sep, end=end)
+
+
 # end def
 
 def debug(*what: object,
           sep: str | None = " ",
           end: str | None = "\n"):
     log(*what, fore=Fore.BLACK, back=Back.LIGHTCYAN_EX, style=Style.NORMAL, sep=sep, end=end)
+
+
 # end def
 
 def indent() -> None:
     global _indent_level
     _indent_level += 1 if _indent_level < _indent_max else _indent_max
+
+
 # end def
 
 def project() -> None:

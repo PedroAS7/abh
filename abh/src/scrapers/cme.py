@@ -19,6 +19,7 @@ class NasaCcmcScraper(SpecializedScraper):
         self._endpoint = "https://kauai.ccmc.gsfc.nasa.gov/CMEscoreboard/WS/get/predictions?skipNoArrivalObservedCMEs=true&CMEtimeStart={date}"
         self._scrape_tz = ZoneInfo("Etc/UTC")
         self._timeout = 15
+
     # end def
 
     def scrape(self) -> list[ScrapeResult]:
@@ -29,7 +30,7 @@ class NasaCcmcScraper(SpecializedScraper):
         scrape_data = urlopen(url, timeout=self._timeout)
 
         if scrape_data:
-            
+
             try:
                 result_json = json.loads(scrape_data.read())
                 if len(result_json) < 1:
@@ -37,8 +38,10 @@ class NasaCcmcScraper(SpecializedScraper):
                 # end if
 
                 latest_result = result_json[0]
-                max_predicts = [pred["predictedMaxKpUpperRange"] or GeomagStormIndex.KP0.value for pred in latest_result["predictions"]]
-                min_predicts = [pred["predictedMaxKpLowerRange"] or GeomagStormIndex.KP9.value for pred in latest_result["predictions"]]
+                max_predicts = [pred["predictedMaxKpUpperRange"] or GeomagStormIndex.KP0.value for pred in
+                                latest_result["predictions"]]
+                min_predicts = [pred["predictedMaxKpLowerRange"] or GeomagStormIndex.KP9.value for pred in
+                                latest_result["predictions"]]
 
                 result = ScrapeResult()
                 result._arrival_time = datetime.strptime(latest_result["arrivalTime"], "%Y-%m-%dT%H:%MZ")
@@ -62,6 +65,8 @@ class NasaCcmcScraper(SpecializedScraper):
 
         return results
     # end def
+
+
 # end class
 
 

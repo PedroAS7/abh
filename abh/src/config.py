@@ -1,13 +1,15 @@
+from enum import Enum
+from json import load
 from os.path import exists
 from os.path import join
-from json import load
-from enum import Enum
 from typing import Any
 
 
 class ConfigKeyType(Enum):
     BOT_TOKEN = 0
     DEBUG_MODE = BOT_TOKEN + 1
+
+
 # end class
 
 
@@ -25,10 +27,12 @@ class _ConfigKey():
         self._value = default
         self._locked = False
         self._mandatory = mandatory
+
     # end def
-    
+
     def is_set(self) -> bool:
         return self._value is not None
+
     # end def
 
     def set_value(self, value):
@@ -38,60 +42,68 @@ class _ConfigKey():
 
         self._value = value
         self._locked = True
+
     # end def
 
     def __repr__(self) -> str:
         return f"Config key '{self.name}'"
+
     # end def
 
     @property
     def type(self) -> ConfigKeyType:
         return self._type
+
     # end def
 
     @property
     def name(self) -> str:
         return self._name
+
     # end def
 
     @property
     def key(self) -> str:
         return self._key
+
     # end def
 
     @property
     def value(self) -> str:
         return self._value
+
     # end def
 
     @property
     def mandatory(self) -> str:
         return self._mandatory
     # end def
+
+
 # end def
 
 
 class Config():
-
     _CFG_FILENAME = join("data", "cfg.json")
 
     def __init__(self) -> None:
         self._cfg_list: list[_ConfigKey] = [
             _ConfigKey
-            (
+                (
                 ConfigKeyType.BOT_TOKEN,
                 "token",
                 "Bot token",
                 mandatory=True
             ),
             _ConfigKey
-            (
+                (
                 ConfigKeyType.DEBUG_MODE,
                 "debug",
                 "Debug mode",
                 default=False
             )
         ]
+
     # end def
 
     def __getitem__(self, key: ConfigKeyType) -> Any:
@@ -108,6 +120,7 @@ class Config():
         # end if
 
         return found_key.value
+
     # end def
 
     @staticmethod
@@ -128,7 +141,7 @@ class Config():
 
             for field_key in cfg_json:
                 field_value = cfg_json[field_key]
-                
+
                 found_key: _ConfigKey = None
                 for cfg_key in cfg_instance._cfg_list:
                     if field_key == cfg_key.key:

@@ -1,30 +1,33 @@
+from enum import Enum
+
+import telegram
+
 from abh.src.chat import Chat
 from abh.src.cmds.botCommand import BotCommand
 from abh.src.consts import Emojis
-from abh.src.consts import SolarFlareClass
 from abh.src.consts import GeomagStormIndex
 from abh.src.consts import HemisphereChoices
+from abh.src.consts import SolarFlareClass
 from abh.src.log import *
-from enum import Enum
-import telegram
 
 
 class _SubCmd(Enum):
-    SEND_UPDATES      = "update"
-    PREDICT_TIME      = "predict"
+    SEND_UPDATES = "update"
+    PREDICT_TIME = "predict"
     CHOOSE_HEMISPHERE = "hemisphere"
-    INCLUDE_DATA      = "data"
-    INCLUDE_IMAGES    = "images"
-    FLARE_CLASS       = "class"
-    GEOMAG_INTENSITY  = "geomag"
+    INCLUDE_DATA = "data"
+    INCLUDE_IMAGES = "images"
+    FLARE_CLASS = "class"
+    GEOMAG_INTENSITY = "geomag"
+
+
 # end class
 
 
 class ConfigureMsgCommand(BotCommand):
-
-    _CMD_INDEX        = 0
-    _SUBCMD_INDEX     = 1
-    _ARGS_INDEX       = 2
+    _CMD_INDEX = 0
+    _SUBCMD_INDEX = 1
+    _ARGS_INDEX = 2
     _BUTTONS_PER_LINE = 5
 
     def __init__(self) -> None:
@@ -34,12 +37,13 @@ class ConfigureMsgCommand(BotCommand):
                          True)
 
         self.cmd_handlers = {
-            _SubCmd.SEND_UPDATES.value      : self._run_send_updates,
-            _SubCmd.FLARE_CLASS.value       : self._run_set_flare_class,
-            _SubCmd.GEOMAG_INTENSITY.value  : self._run_set_geomag_intensity,
-            _SubCmd.CHOOSE_HEMISPHERE.value : self._run_set_hemisphere,
-            _SubCmd.INCLUDE_DATA.value      : self._run_include_data,
-            }
+            _SubCmd.SEND_UPDATES.value: self._run_send_updates,
+            _SubCmd.FLARE_CLASS.value: self._run_set_flare_class,
+            _SubCmd.GEOMAG_INTENSITY.value: self._run_set_geomag_intensity,
+            _SubCmd.CHOOSE_HEMISPHERE.value: self._run_set_hemisphere,
+            _SubCmd.INCLUDE_DATA.value: self._run_include_data,
+        }
+
     # end def
 
     async def _run_send_updates(self,
@@ -57,6 +61,7 @@ class ConfigureMsgCommand(BotCommand):
                     await update.effective_message.chat.send_message(f"{Emojis.OK.value} Bot will send updates")
             # end match
         # end if
+
     # end def
 
     async def _run_include_data(self,
@@ -69,11 +74,14 @@ class ConfigureMsgCommand(BotCommand):
             chat.settings.include_data = not chat.settings.include_data
             match chat.settings.include_data:
                 case False:
-                    await update.effective_message.chat.send_message(f"{Emojis.OK.value} Bot will won't include detailed data")
+                    await update.effective_message.chat.send_message(
+                        f"{Emojis.OK.value} Bot will won't include detailed data")
                 case True:
-                    await update.effective_message.chat.send_message(f"{Emojis.OK.value} Bot will include detailed data of the event")
+                    await update.effective_message.chat.send_message(
+                        f"{Emojis.OK.value} Bot will include detailed data of the event")
             # end match
         # end if
+
     # end def
 
     async def _run_set_flare_class(self,
@@ -92,6 +100,7 @@ class ConfigureMsgCommand(BotCommand):
         except KeyError:
             await update.effective_message.reply_text("Invalid choice!")
         # end try
+
     # end def
 
     async def _run_set_hemisphere(self,
@@ -111,6 +120,7 @@ class ConfigureMsgCommand(BotCommand):
         except KeyError:
             await update.effective_message.reply_text("Invalid choice!")
         # end try
+
     # end def
 
     async def _run_set_geomag_intensity(self,
@@ -129,6 +139,7 @@ class ConfigureMsgCommand(BotCommand):
         except KeyError:
             await update.effective_message.reply_text("Invalid choice!")
         # end try
+
     # end def
 
     async def run(self,
@@ -148,19 +159,22 @@ class ConfigureMsgCommand(BotCommand):
                     await self.cmd_handlers[args[ConfigureMsgCommand._SUBCMD_INDEX]](update,
                                                                                      app,
                                                                                      chat,
-                                                                                     *(args[ConfigureMsgCommand._ARGS_INDEX:]))
+                                                                                     *(args[
+                                                                                       ConfigureMsgCommand._ARGS_INDEX:]))
                 else:
-                    warn(f"Got an unknown command '{args[ConfigureMsgCommand._CMD_INDEX]} {args[ConfigureMsgCommand._SUBCMD_INDEX]}'")
+                    warn(
+                        f"Got an unknown command '{args[ConfigureMsgCommand._CMD_INDEX]} {args[ConfigureMsgCommand._SUBCMD_INDEX]}'")
                 # end if
             else:
                 await update.effective_message.reply_text("You must be an admin to configure the bot")
             # end if
         # end if
+
     # end def
 
     def get_interactive_choices(self, command_args: list[str] | None = None) \
-        -> tuple[str | None, telegram.InlineKeyboardMarkup | None, bool]:
-        
+            -> tuple[str | None, telegram.InlineKeyboardMarkup | None, bool]:
+
         prompt = "Please choose:"
         ret_val = None
         delete_msg = False
@@ -209,13 +223,16 @@ class ConfigureMsgCommand(BotCommand):
                     for key in flare_help:
                         prompt += f"\n{SolarFlareClass(key).name} = {flare_help[key]}"
                     # end for
-                    
+
                     buttons = [
-                        telegram.InlineKeyboardButton(flare_class.name, callback_data=f"{self.cmd} {_SubCmd.FLARE_CLASS.value} {flare_class.name}")
-                            for flare_class in SolarFlareClass
+                        telegram.InlineKeyboardButton(flare_class.name,
+                                                      callback_data=f"{self.cmd} {_SubCmd.FLARE_CLASS.value} {flare_class.name}")
+                        for flare_class in SolarFlareClass
                     ]
-                    
-                    ret_val = telegram.InlineKeyboardMarkup([buttons[x:x+ConfigureMsgCommand._BUTTONS_PER_LINE] for x in range(0, len(buttons), ConfigureMsgCommand._BUTTONS_PER_LINE)])
+
+                    ret_val = telegram.InlineKeyboardMarkup(
+                        [buttons[x:x + ConfigureMsgCommand._BUTTONS_PER_LINE] for x in
+                         range(0, len(buttons), ConfigureMsgCommand._BUTTONS_PER_LINE)])
 
                 case "geomag":
                     prompt = "What minimum geomagnetic storm intensity should trigger alerts?"
@@ -225,11 +242,14 @@ class ConfigureMsgCommand(BotCommand):
                     # end for
 
                     buttons = [
-                        telegram.InlineKeyboardButton(geomag_class.name, callback_data=f"{self.cmd} {_SubCmd.GEOMAG_INTENSITY.value} {geomag_class.name}")
-                            for geomag_class in GeomagStormIndex
+                        telegram.InlineKeyboardButton(geomag_class.name,
+                                                      callback_data=f"{self.cmd} {_SubCmd.GEOMAG_INTENSITY.value} {geomag_class.name}")
+                        for geomag_class in GeomagStormIndex
                     ]
 
-                    ret_val = telegram.InlineKeyboardMarkup([buttons[x:x+ConfigureMsgCommand._BUTTONS_PER_LINE] for x in range(0, len(buttons), ConfigureMsgCommand._BUTTONS_PER_LINE)])
+                    ret_val = telegram.InlineKeyboardMarkup(
+                        [buttons[x:x + ConfigureMsgCommand._BUTTONS_PER_LINE] for x in
+                         range(0, len(buttons), ConfigureMsgCommand._BUTTONS_PER_LINE)])
             # end match
         # end with
 

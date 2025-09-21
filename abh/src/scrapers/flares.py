@@ -1,10 +1,10 @@
 import json
-import math
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from json import JSONDecodeError
 from ssl import SSLContext
 from urllib.request import urlopen
 from zoneinfo import ZoneInfo
+
 from abh.src.consts import SolarFlareClass
 from abh.src.log import error
 from abh.src.scrapers.scraper import Scraper, SpecializedScraper, ScrapeResult
@@ -19,8 +19,8 @@ class NoaaFlareScraper(SpecializedScraper):
         self._solar_winds = "https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json"
         self._scrape_tz = ZoneInfo("Etc/UTC")
         self._timeout = 5
-    # end def
 
+    # end def
 
     def scrape(self) -> list[ScrapeResult]:
         results = []
@@ -42,6 +42,7 @@ class NoaaFlareScraper(SpecializedScraper):
         # end if
 
         return results
+
     # end def
 
     def _scrape_candidate(self, endpoint: str) -> list[dict] | None:
@@ -64,6 +65,7 @@ class NoaaFlareScraper(SpecializedScraper):
         # end if
 
         return scrape
+
     # end def
 
     def _get_best_candidate(self) -> list[dict] | None:
@@ -74,8 +76,10 @@ class NoaaFlareScraper(SpecializedScraper):
 
         # One of both succeeded
         if primary or secondary:
-            primary_time_tag = datetime.strptime(primary[0]["time_tag"], "%Y-%m-%dT%H:%M:%SZ") if primary else datetime.fromtimestamp(0)
-            secondary_time_tag = datetime.strptime(secondary[0]["time_tag"], "%Y-%m-%dT%H:%M:%SZ") if secondary else datetime.fromtimestamp(0)
+            primary_time_tag = datetime.strptime(primary[0]["time_tag"],
+                                                 "%Y-%m-%dT%H:%M:%SZ") if primary else datetime.fromtimestamp(0)
+            secondary_time_tag = datetime.strptime(secondary[0]["time_tag"],
+                                                   "%Y-%m-%dT%H:%M:%SZ") if secondary else datetime.fromtimestamp(0)
 
             # Either endpoint went offline for a moment
             if primary_time_tag > secondary_time_tag:
@@ -93,8 +97,9 @@ class NoaaFlareScraper(SpecializedScraper):
 
         return best
     # end def
-# end class
 
+
+# end class
 
 
 class FlaresScraper(Scraper):

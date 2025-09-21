@@ -1,7 +1,9 @@
 from traceback import format_exc
-from abh.src.log import *
+
 import telegram
-from abh.src.ManagedThread import ManagedThread
+
+from abh.src.thread import ManagedThread
+from abh.src.log import *
 
 
 class BotListener(ManagedThread):
@@ -11,27 +13,34 @@ class BotListener(ManagedThread):
         self._bot: object = bot
         self._app: object = bot_app
         self.loop = loop
+
     # end def
 
     def run_thread(self, **kwargs) -> None:
         super().run_thread(_t_start)
+
     # end def
 
     @property
     def app(self) -> object:
         return self._app
+
     # end def
 
     @property
     def bot(self) -> object:
         return self._bot
     # end def
+
+
 # end class
 
 
 def _t_start(listener: BotListener) -> None:
     loop = listener.loop
     loop.run_until_complete(_t_serve_bot(listener))
+
+
 # end def
 
 

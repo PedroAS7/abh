@@ -1,14 +1,15 @@
-from datetime import datetime, timezone
-from abh.src.ManagedThread import ManagedThread
-from abh.src.consts import GeomagStormIndex
-from abh.src.consts import SolarFlareClass
-from abh.src.consts import HemisphereChoices
-from abh.src.log import *
-from os.path import join
-from os.path import exists
-from time import time
 import pickle
 import threading
+from datetime import datetime, timezone
+from os.path import exists
+from os.path import join
+from time import time
+
+from abh.src.thread import ManagedThread
+from abh.src.consts import GeomagStormIndex
+from abh.src.consts import HemisphereChoices
+from abh.src.consts import SolarFlareClass
+from abh.src.log import *
 
 
 class ScrapeResult:
@@ -316,6 +317,7 @@ class Scraper(ManagedThread):
 
             self._results = sorted(self._results, key=lambda _result: _result.start_time, reverse=True)
         # end with
+
     # end def
 
     def get_new(self) -> list[ScrapeResult]:
@@ -355,7 +357,7 @@ class Scraper(ManagedThread):
         with self._results_cond:
             latest_result = self._results[-1] if len(self._results) else None
             self._results_cond.release()
-    
+
             return latest_result
         # end with
     # end def

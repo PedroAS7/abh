@@ -1,21 +1,22 @@
 from uuid import uuid4
-from abh.src.updates.parser import TelegramUpdateParser
+
+import telegram
 from telegram import InlineQueryResultArticle
 from telegram import InputTextMessageContent
-from telegram.constants import ParseMode
-import telegram
-from html import escape
+
+from abh.src.updates.parser import TelegramUpdateParser
 
 
 class TelegramInlineQueryParser(TelegramUpdateParser):
 
     def can_handle(self, update: telegram.Update) -> bool:
-        return update.effective_user        \
+        return update.effective_user \
             and update.inline_query
+
     # end def
 
     async def parse(self, update: telegram.Update, app: object):
-        
+
         query = update.inline_query.query
         results = []
 
@@ -31,7 +32,7 @@ class TelegramInlineQueryParser(TelegramUpdateParser):
                 input_message_content=InputTextMessageContent(cmd.cmd),
             ))
         # end for
-                
+
         await update.inline_query.answer(results)
     # end def
 # end class

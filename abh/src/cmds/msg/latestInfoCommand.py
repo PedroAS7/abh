@@ -1,8 +1,7 @@
-from abh.src.cmds.botCommand import BotCommand
-from abh.src.consts import Emojis, GeomagStormIndex
-from abh.src.log import *
 import telegram
 
+from abh.src.cmds.botCommand import BotCommand
+from abh.src.consts import Emojis, GeomagStormIndex
 from abh.src.scrapers.scraper import ScrapeResult
 
 
@@ -13,6 +12,7 @@ class LatestInfoCommand(BotCommand):
                          f"{Emojis.CLOCK.value} Latest information",
                          False,
                          True)
+
     # end def
 
     async def run(self,
@@ -20,7 +20,7 @@ class LatestInfoCommand(BotCommand):
                   app: 'BotApp',
                   *args) -> None:
         await super().run(update, app, *args)
-        
+
         if len(args) != 1:
             await update.message.reply_text("Invalid command!")
         else:

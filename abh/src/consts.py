@@ -1,62 +1,67 @@
-from enum import IntEnum
-from enum import Enum
 import math
+from enum import Enum
+from enum import IntEnum
 
 
-#--
+# --
 # Classes
-#--
+# --
 
 class ClassWithHelp():
     @staticmethod
     def get_help() -> dict[object, str]:
         raise NotImplementedError("Class did not implement help method")
     # end def
+
+
 # end class
 
 
 class SolarFlareClass(ClassWithHelp, IntEnum):
     # Class is 10 ^ (val / 10)
     OTHER = -99
-    B1  = -70
-    B5  = -65
-    C1  = -60
-    C5  = -55
-    M1  = -50
-    M5  = -45
-    X1  = -40
-    X5  = -35
+    B1 = -70
+    B5 = -65
+    C1 = -60
+    C5 = -55
+    M1 = -50
+    M5 = -45
+    X1 = -40
+    X5 = -35
     X10 = -30
     X20 = -20
     X30 = -10
-    
+
     @staticmethod
     def get_help() -> dict[object, str]:
         # https://svs.gsfc.nasa.gov/10109/
         return {
             SolarFlareClass.OTHER: "Other class. Triggers every time",
-            SolarFlareClass.B1:    "Weak. Will trigger a lot of alerts",
-            SolarFlareClass.B5:    "Weak. Will trigger a lot of alerts",
-            SolarFlareClass.C1:    "Weak. Will trigger a lot of alerts",
-            SolarFlareClass.C5:    "Moderate. Will trigger a lot of alerts",
-            SolarFlareClass.M1:    "Moderate. Will trigger a lot of alerts",
-            SolarFlareClass.M5:    "Moderate (350 per solar cycle). Might trigger a lot of alerts",
-            SolarFlareClass.X1:    "Strong (175 per solar cycle)",
-            SolarFlareClass.X5:    "Very strong (75 per solar cycle)",
-            SolarFlareClass.X10:   "Severe (8 per solar cycle)",
-            SolarFlareClass.X20:   "Extreme (1 per solar cycle)",
-            SolarFlareClass.X30:   "Unbelievably extreme (here as a placeholder for >X20)"
+            SolarFlareClass.B1: "Weak. Will trigger a lot of alerts",
+            SolarFlareClass.B5: "Weak. Will trigger a lot of alerts",
+            SolarFlareClass.C1: "Weak. Will trigger a lot of alerts",
+            SolarFlareClass.C5: "Moderate. Will trigger a lot of alerts",
+            SolarFlareClass.M1: "Moderate. Will trigger a lot of alerts",
+            SolarFlareClass.M5: "Moderate (350 per solar cycle). Might trigger a lot of alerts",
+            SolarFlareClass.X1: "Strong (175 per solar cycle)",
+            SolarFlareClass.X5: "Very strong (75 per solar cycle)",
+            SolarFlareClass.X10: "Severe (8 per solar cycle)",
+            SolarFlareClass.X20: "Extreme (1 per solar cycle)",
+            SolarFlareClass.X30: "Unbelievably extreme (here as a placeholder for >X20)"
         }
+
     # end def
 
     @staticmethod
     def lowest() -> 'SolarFlareClass':
         return SolarFlareClass.B1
+
     # end def
 
     @staticmethod
     def highest() -> 'SolarFlareClass':
         return SolarFlareClass.X30
+
     # end def
 
     @staticmethod
@@ -76,6 +81,8 @@ class SolarFlareClass(ClassWithHelp, IntEnum):
 
         return flare_class
     # end def
+
+
 # end class
 
 
@@ -90,7 +97,7 @@ class GeomagStormIndex(ClassWithHelp, IntEnum):
     KP7 = 7,
     KP8 = 8,
     KP9 = 9
-    
+
     @staticmethod
     def get_help() -> dict[object, str]:
         # https://auroraforecast.is/kp-index/
@@ -108,25 +115,29 @@ class GeomagStormIndex(ClassWithHelp, IntEnum):
             GeomagStormIndex.KP9: "Bright at Paris, visible from southern Europe"
         }
     # end def
+
+
 # end class
 
 
 class HemisphereChoices(IntEnum):
-    NORTH       = 1
-    SOUTH       = 2
-    BOTH        = 3
+    NORTH = 1
+    SOUTH = 2
+    BOTH = 3
+
+
 # end class
 
 
 class Emojis(Enum):
-    OK          = "\U0001F197"
-    WAVE        = "\U0001F44B"
-    WRENCH      = "\U0001F527"
-    BELL        = "\U0001F514"
-    GLOBE       = "\U0001F310"
-    CLOCK       = "\U0001F551"
-    MILKY_WAY   = "\U0001F30C"
-    GRAPH       = "\U0001F4CA"
-    QUESTION    = "\U00002753"
-    SIREN       = "\U0001F6A8"
+    OK = "\U0001F197"
+    WAVE = "\U0001F44B"
+    WRENCH = "\U0001F527"
+    BELL = "\U0001F514"
+    GLOBE = "\U0001F310"
+    CLOCK = "\U0001F551"
+    MILKY_WAY = "\U0001F30C"
+    GRAPH = "\U0001F4CA"
+    QUESTION = "\U00002753"
+    SIREN = "\U0001F6A8"
 # end class

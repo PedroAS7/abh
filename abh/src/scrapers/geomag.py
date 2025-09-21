@@ -1,13 +1,13 @@
 import json
 import re
-from json import JSONDecodeError
 from datetime import datetime, timedelta, timezone
+from json import JSONDecodeError
 from ssl import SSLContext
+from urllib.request import urlopen
+from zoneinfo import ZoneInfo
 
 from abh.src.consts import GeomagStormIndex
 from abh.src.log import error
-from zoneinfo import ZoneInfo
-from urllib.request import urlopen
 from abh.src.scrapers.scraper import (Scraper,
                                       SpecializedScraper,
                                       ScrapeResult)
@@ -15,6 +15,7 @@ from abh.src.scrapers.scraper import (Scraper,
 OVATION_NORTH = "https://services.swpc.noaa.gov/images/animations/ovation/north/aurora_N_{date}.jpg"
 OVATION_SOUTH = "https://services.swpc.noaa.gov/images/animations/ovation/south/aurora_S_{date}.jpg"
 MAGNETOSPHERE = "https://services.swpc.noaa.gov/images/animations/geospace/velocity/latest.png"
+
 
 def _get_attachments(scrape_time: datetime):
     attachments = []
@@ -26,6 +27,8 @@ def _get_attachments(scrape_time: datetime):
     attachments.append(OVATION_SOUTH.replace("{date}", norm_date.strftime("%Y-%m-%d_%H%M")))
 
     return attachments
+
+
 # end def
 
 
@@ -36,8 +39,10 @@ class GfzPotsdamScraper(SpecializedScraper):
         self._endpoint = "https://www-app3.gfz-potsdam.de/kp_index/Kp_ap_nowcast.txt"
         self._scrape_tz = ZoneInfo("Europe/Berlin")
         self._timeout = 5
-        self._line_regex = re.compile(br"\n(?P<year>\d{4}) (?P<month>\d{2}) (?P<day>\d{2}) (?P<hour>\d{2})\.\d \d{2}\.\d{2} \d+\.\d+ \d+\.\d+ +(?P<k>\d+\.\d+) +(?P<ap>\d+) (?P<is_sure>\d)")
+        self._line_regex = re.compile(
+            br"\n(?P<year>\d{4}) (?P<month>\d{2}) (?P<day>\d{2}) (?P<hour>\d{2})\.\d \d{2}\.\d{2} \d+\.\d+ \d+\.\d+ +(?P<k>\d+\.\d+) +(?P<ap>\d+) (?P<is_sure>\d)")
         self._forecast_interval = timedelta(hours=3)
+
     # end def
 
     def scrape(self) -> list[ScrapeResult]:
@@ -90,6 +95,8 @@ class GfzPotsdamScraper(SpecializedScraper):
 
         return results
     # end def
+
+
 # end class
 
 
@@ -100,6 +107,7 @@ class NoaaPlanetaryKScraper(SpecializedScraper):
         self._endpoint = "https://services.swpc.noaa.gov/json/planetary_k_index_1m.json"
         self._scrape_tz = ZoneInfo("Etc/UTC")
         self._timeout = 5
+
     # end def
 
     def scrape(self) -> list[ScrapeResult]:
@@ -121,9 +129,11 @@ class NoaaPlanetaryKScraper(SpecializedScraper):
                     result._start_time = time_tag
                     result._end_time = time_tag + timedelta(minutes=Scraper.SCRAPE_INTERVAL)
                     result._raw_geomag_intensity = max(planetary_ks,
-                                                       key=lambda planetary_k: planetary_k["estimated_kp"])["estimated_kp"]
+                                                       key=lambda planetary_k: planetary_k["estimated_kp"])[
+                        "estimated_kp"]
                     result._geomag_intensity = GeomagStormIndex(max(planetary_ks,
-                                                                    key=lambda planetary_k: planetary_k["kp_index"])["kp_index"])
+                                                                    key=lambda planetary_k: planetary_k["kp_index"])[
+                                                                    "kp_index"])
                     result._attachments.extend(_get_attachments(time_tag))
                     results.append(result)
                 # end for
@@ -135,6 +145,8 @@ class NoaaPlanetaryKScraper(SpecializedScraper):
 
         return results
     # end def
+
+
 # end class
 
 

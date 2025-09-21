@@ -1,7 +1,8 @@
+import telegram
+
 from abh.src.cmds.botCommand import BotCommand
 from abh.src.consts import Emojis
-from abh.src.log import *
-import telegram
+
 
 class StatusCommand(BotCommand):
 
@@ -10,6 +11,7 @@ class StatusCommand(BotCommand):
                          f"{Emojis.GRAPH.value} Bot status",
                          False,
                          True)
+
     # end def
 
     async def run(self,
@@ -17,7 +19,7 @@ class StatusCommand(BotCommand):
                   app: object,
                   *args) -> None:
         await super().run(update, app, *args)
-        
+
         if len(args) != 1:
             await update.message.reply_text("Invalid command!")
         else:

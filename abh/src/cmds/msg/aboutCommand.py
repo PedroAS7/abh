@@ -1,10 +1,12 @@
-from abh.src.cmds.botCommand import BotCommand
-from abh.src.consts import Emojis
+import telegram
+
 from abh.src import (APP_NAME,
                      APP_AUTHORS,
                      APP_VERSION,
                      APP_WEBSITE)
-import telegram
+from abh.src.cmds.botCommand import BotCommand
+from abh.src.consts import Emojis
+
 
 class AboutCommand(BotCommand):
 
@@ -13,6 +15,7 @@ class AboutCommand(BotCommand):
                          f"{Emojis.QUESTION.value} About",
                          False,
                          True)
+
     # end def
 
     async def run(self,
@@ -20,7 +23,7 @@ class AboutCommand(BotCommand):
                   app: object,
                   *args) -> None:
         await super().run(update, app, *args)
-        
+
         if len(args) != 1:
             await update.message.reply_text("Invalid command!")
         else:

@@ -1,16 +1,18 @@
+import telegram
+
 from abh.src.chat import Chat
 from abh.src.consts import Emojis
 from abh.src.updates.parser import TelegramUpdateParser
-import telegram
 
 
 class TelegramMemberUpdatedParser(TelegramUpdateParser):
 
     def can_handle(self, update: telegram.Update) -> bool:
-        return update.effective_chat         \
-            and update.effective_user        \
-            and update.my_chat_member        \
+        return update.effective_chat \
+            and update.effective_user \
+            and update.my_chat_member \
             and not update.effective_message
+
     # end def
 
     async def parse(self, update: telegram.Update, app: object):
@@ -18,8 +20,8 @@ class TelegramMemberUpdatedParser(TelegramUpdateParser):
 
         # Bot has been added
         if update.my_chat_member.new_chat_member.user == app.bot_user \
-        and (not update.my_chat_member.old_chat_member
-             or update.my_chat_member.old_chat_member.status == telegram.constants.ChatMemberStatus.LEFT):
+                and (not update.my_chat_member.old_chat_member
+                     or update.my_chat_member.old_chat_member.status == telegram.constants.ChatMemberStatus.LEFT):
 
             # First time it's been added
             if not app.has_chat(update.effective_chat.id):
