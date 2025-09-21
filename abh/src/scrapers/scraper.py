@@ -136,7 +136,7 @@ class ScrapeResult:
         merged._scrape_time = ScrapeResult._merge_dates(other.scrape_time, self.scrape_time)
         merged._start_time = ScrapeResult._merge_dates(other.start_time, self.start_time)
         merged._arrival_time = ScrapeResult._merge_dates(other.arrival_time, self.arrival_time)
-        merged._geomag_intensity = other._geomag_intensity if other._geomag_intensity.value > self._geomag_intensity.value else self._geomag_intensity.value
+        merged._geomag_intensity = other.intensity if other.intensity and other.intensity > self.intensity else self.intensity
         merged._flare_class = max(other.flare_class, self.flare_class)
         merged._raw_geomag_intensity = max(other.raw_geomag_intensity, self.raw_flare_class)
         merged._is_prediction = other.is_prediction or self.is_prediction
