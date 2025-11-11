@@ -1,5 +1,6 @@
 import telegram
 
+from abh.src.log import warn
 from abh.src.cmds.botCommand import BotCommand
 from abh.src.consts import Emojis, GeomagStormIndex
 from abh.src.scrapers.scraper import ScrapeResult
@@ -27,6 +28,7 @@ class LatestInfoCommand(BotCommand):
             latest_result: ScrapeResult | None = None
             for scraper in app.scrapers:
                 if scraper.latest is None:
+                    warn(f"Failed to retrieve result from {scraper.name}")
                     continue
                 # end if
 
