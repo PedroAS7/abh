@@ -218,10 +218,10 @@ class ConfigureMsgCommand(BotCommand):
                     ]])
 
                 case "class":
-                    prompt = "What minimum solar flare class should trigger alerts?"
+                    prompt = "What minimum solar flare class should trigger alerts?\n"
                     flare_help = SolarFlareClass.get_help()
                     for key in flare_help:
-                        prompt += f"\n{SolarFlareClass(key).name} = {flare_help[key]}"
+                        prompt += f"\n\t- {SolarFlareClass(key).name.title()}: {flare_help[key]}"
                     # end for
 
                     buttons = [
@@ -235,10 +235,10 @@ class ConfigureMsgCommand(BotCommand):
                          range(0, len(buttons), ConfigureMsgCommand._BUTTONS_PER_LINE)])
 
                 case "geomag":
-                    prompt = "What minimum geomagnetic storm intensity should trigger alerts?"
+                    prompt = "What minimum geomagnetic storm intensity should trigger alerts?\n"
                     geomag_help = GeomagStormIndex.get_help()
                     for key in geomag_help:
-                        prompt += f"\n{GeomagStormIndex(key).name} = {geomag_help[key]}"
+                        prompt += f"\n\t- {GeomagStormIndex(key).name}: {geomag_help[key]}"
                     # end for
 
                     buttons = [
