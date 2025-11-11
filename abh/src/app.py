@@ -188,6 +188,7 @@ class BotApp:
 # --
 
 def graceful_stop(threads: list, bot_loop) -> None:
+    
     for thread in threads:
         thread.stop_thread()
     # end for
@@ -197,17 +198,11 @@ def graceful_stop(threads: list, bot_loop) -> None:
         singleton.write()
     # end if
 
-    if bot_loop:
-        bot_loop.close()
-    # end if
-
-    project()
-    log("")
-    log("Bot has stopped")
-    exit(0)
-
-
+    # Raise exception to stop bot
+    bot_loop.stop()
+    bot_loop.close()
 # end def
+
 
 async def serve_forever(cfg: Config) -> None:
     bot: telegram.Bot | None = None
@@ -232,6 +227,10 @@ async def serve_forever(cfg: Config) -> None:
 
 # end def
 
+def raise_exception() -> None:
+    raise KeyboardInterrupt()
+# end def
+
 
 def run() -> None:
     log("ABH - Aurora Borealis Hunterus bot")
@@ -244,8 +243,8 @@ def run() -> None:
     # noinspection PyBroadException
     bot_loop = None
     try:
-        signal.signal(signal.SIGINT, lambda _1, _2: graceful_stop(threads, bot_loop))
-        signal.signal(signal.SIGTERM, lambda _1, _2: graceful_stop(threads, bot_loop))
+        signal.signal(signal.SIGINT, lambda _1, _2: raise_exception())
+        signal.signal(signal.SIGTERM, lambda _1, _2: raise_exception())
 
         BotApp.read()
         cfg = Config.read()
@@ -290,5 +289,6 @@ def run() -> None:
 
     finally:
         graceful_stop(threads, bot_loop)
+        log("App stopped. Goodbye!")
     # end try
 # end def
