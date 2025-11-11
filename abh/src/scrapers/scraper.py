@@ -1,9 +1,11 @@
 import pickle
 import threading
+import uuid
 from datetime import datetime, timezone
 from os.path import exists
 from os.path import join
 from time import time
+from dataclasses import dataclass, field
 
 from abh.src.thread import ManagedThread
 from abh.src.consts import GeomagStormIndex
@@ -12,56 +14,22 @@ from abh.src.consts import SolarFlareClass
 from abh.src.log import *
 
 
+@dataclass
 class ScrapeResult:
-
-    def __init__(self) -> None:
-        self._raw_geomag_intensity: float = 0.0
-        self._geomag_intensity: GeomagStormIndex = GeomagStormIndex.KP0
-        self._raw_flare_class: float = 0.0
-        self._flare_class: SolarFlareClass = SolarFlareClass.OTHER
-        self._hemisphere: HemisphereChoices = HemisphereChoices.BOTH
-        self._attachments: list[str] = []
-        self._scrape_time: datetime = datetime.now(timezone.utc)
-        self._arrival_time: datetime = datetime(1970, 1, 1)  # Yes, it'll have arrived a long time ago
-        self._is_prediction: bool = False
-        self._start_time: datetime = datetime.now(timezone.utc)
-        self._end_time: datetime = datetime.now(timezone.utc)
-
-    # end def
-
-    @property
-    def raw_geomag_intensity(self) -> float:
-        return self._raw_geomag_intensity
-
-    # end def
-
-    @property
-    def intensity(self) -> GeomagStormIndex:
-        return self._geomag_intensity
-
-    # end def
-
-    @property
-    def raw_flare_class(self) -> float:
-        return self._raw_flare_class
-
-    # end def
-
-    @property
-    def flare_class(self) -> SolarFlareClass:
-        return self._flare_class
-
-    # end def
-
-    @property
-    def hemisphere(self) -> HemisphereChoices:
-        return self._hemisphere
-
-    # end def
+    id: uuid.UUID = uuid.uuid4()
+    raw_geomag_intensity: float = 0.0
+    raw_flare_class: float = 0.0
+    hemisphere: HemisphereChoices = HemisphereChoices.BOTH
+    attachments: dict = field(default_factory=dict)
+    scrape_time: datetime = datetime.now(timezone.utc)
+    arrival_time: datetime = datetime(1970, 1, 1)  # Yes, it'll have arrived a long time ago
+    is_prediction: bool = False
+    start_time: datetime = datetime.now(timezone.utc)
+    end_time: datetime = datetime.now(timezone.utc)
 
     @property
     def data(self) -> str:
-        return (f"Gr:{self._raw_geomag_intensity},Gi:{self._geomag_intensity},"
+        return (f"Gr:{self.raw_geomag_intensity},Gi:{self.intensity},"
                 f"Cr:{self.raw_flare_class},Ci:{self.flare_class},"
                 f"H:{self.hemisphere},"
                 f"M:{self.attachments},"
@@ -74,39 +42,13 @@ class ScrapeResult:
     # end def
 
     @property
-    def attachments(self) -> list:
-        return self._attachments
-
+    def intensity(self) -> GeomagStormIndex:
+        return GeomagStormIndex(int(self.raw_geomag_intensity))
     # end def
 
     @property
-    def scrape_time(self) -> datetime:
-        return self._scrape_time
-
-    # end def
-
-    @property
-    def arrival_time(self) -> datetime:
-        return self._arrival_time
-
-    # end def
-
-    @property
-    def is_prediction(self) -> bool:
-        return self._is_prediction
-
-    # end def
-
-    @property
-    def start_time(self) -> datetime:
-        return self._start_time
-
-    # end def
-
-    @property
-    def end_time(self) -> datetime:
-        return self._end_time
-
+    def flare_class(self) -> SolarFlareClass:
+        return SolarFlareClass.round_to_val(self.raw_flare_class)
     # end def
 
     @staticmethod
@@ -141,12 +83,14 @@ class ScrapeResult:
         merged._flare_class = max(other.flare_class, self.flare_class)
         merged._raw_geomag_intensity = max(other.raw_geomag_intensity, self.raw_flare_class)
         merged._is_prediction = other.is_prediction or self.is_prediction
-        merged._attachments = other.attachments[:].extend(self.attachments) if self.attachments else other.attachments[
-                                                                                                     :]
+        merged._attachments = other.attachments.copy().update(self.attachments) if self.attachments else other.attachments.copy()
         merged._hemisphere = other.hemisphere | self.hemisphere
         return merged
     # end def
 
+    def __hash__(self):
+        return self.id.__hash__()
+    # end def
 
 # end def
 
@@ -176,13 +120,17 @@ class Scraper(ManagedThread):
     SCRAPE_INTERVAL = 5.0  # 5 minutes
     SCRAPE_INTERVAL_S = 60.0 * SCRAPE_INTERVAL
 
+    NEWLY_ADDED_SCRAPE = 0
+    NEWLY_ADDED_CHECKED = 1
+    NEWLY_ADDED_MATCHED = 2
+
     def __init__(self,
                  name,
                  file_name,
                  provides_intensity: bool,
                  provides_class: bool) -> None:
         super().__init__(f"Scraper '{name}'")
-        self._alerts = {}
+        self._newly_added: dict[uuid.UUID, list[ScrapeResult | bool]] = {}
         self._provides_intensity = provides_intensity
         self._provides_class = provides_class
         self._name = name
@@ -238,6 +186,7 @@ class Scraper(ManagedThread):
         # end if
 
         with open(self._history_filename, "wb") as history_file:
+            # noinspection PyTypeChecker
             pickle.dump(self._results, history_file)
         # end with
 
@@ -253,8 +202,10 @@ class Scraper(ManagedThread):
         # end for
 
         for result in self._results:
-            if result not in self._alerts:
-                self._alerts[result] = False
+            if result.id not in self._newly_added.keys():
+                self._newly_added[result.id] = [result,  False, False]
+            else:
+                self._newly_added[result.id][self.NEWLY_ADDED_MATCHED] = True
             # end if
         # end for
 
@@ -269,25 +220,35 @@ class Scraper(ManagedThread):
 
     def _append_result(self, results: list[ScrapeResult]) -> None:
 
+        # Normalize dates to UTC
+        for result in results:
+            result.start_time = result.start_time.replace(tzinfo=timezone.utc)
+            result.end_time = result.end_time.replace(tzinfo=timezone.utc)
+            result.scrape_time = result.end_time.replace(tzinfo=timezone.utc)
+            result.arrival_time = result.end_time.replace(tzinfo=timezone.utc)
+        # end for
+
         with self._results_cond:
 
             results = sorted(results, key=lambda scrape_result: scrape_result.start_time, reverse=True)
-            earliest_result = self._results[-1] if len(self._results) > 0 else None
-            latest_result = self._results[0] if len(self._results) > 0 else None
+            result_count = len(self._results)
+            earliest_result = self._results[-1] if result_count > 0 else None
+            latest_result = self._results[0] if result_count > 0 else None
 
-            earlier_to_new_results_i = 0
+            earlier_to_new_results_i = result_count
             if len(results):
                 earliest_new_result = results[-1]
 
-                for i in range(len(self._results) - 1, -1, -1):
+                for i in range(result_count - 1, -1, -1):
                     if self._results[i].start_time.timestamp() < earliest_new_result.start_time.timestamp():
                         earlier_to_new_results_i = i
                         break
                     # end if
                 # end for
+                debug(f"[{self.name}] Skipping {result_count - earlier_to_new_results_i} / {result_count} results")
             # end if
 
-            for result in results:
+            for result in results[earlier_to_new_results_i:]:
 
                 if not latest_result or result.start_time.timestamp() >= latest_result.end_time.timestamp():
                     self._results.append(result)
@@ -316,15 +277,32 @@ class Scraper(ManagedThread):
     # end def
 
     def get_new(self) -> list[ScrapeResult]:
-        new_cme = []
-        for scrape_result in self._alerts:
-            if not self._alerts[scrape_result]:
-                self._alerts[scrape_result] = True
-                new_cme.append(scrape_result)
+        new_results = []
+        old_results = []
+        self._results_cond.acquire()
+        for result_id in self._newly_added:
+            result_info = self._newly_added[result_id]
+
+            # Result is too old. Ignore it, and remove it later
+            if not result_info[self.NEWLY_ADDED_MATCHED]:
+                old_results.append(result_id)
+                continue
             # end if
+
+            if not result_info[self.NEWLY_ADDED_CHECKED]:
+                result_info[self.NEWLY_ADDED_CHECKED] = True
+                new_results.append(result_info[self.NEWLY_ADDED_SCRAPE])
+            # end if
+
+            # Reset so we know which results are too old
+            result_info[self.NEWLY_ADDED_MATCHED] = False
         # end for
 
-        return new_cme
+        # Remove old results
+        [self._newly_added.pop(result_id) for result_id in old_results]
+        self._results_cond.release()
+
+        return new_results
 
     # end def
 
@@ -349,12 +327,14 @@ class Scraper(ManagedThread):
     @property
     def latest(self) -> ScrapeResult | None:
 
-        with self._results_cond:
-            latest_result = self._results[-1] if len(self._results) else None
-            self._results_cond.release()
+        if not self._results_cond.acquire(blocking=True, timeout=Scraper._RESULTS_COND_TIMEOUT):
+            return None
+        # end if
 
-            return latest_result
-        # end with
+        latest_result = self._results[-1] if len(self._results) else None
+        self._results_cond.release()
+
+        return latest_result
     # end def
 
 
@@ -374,10 +354,17 @@ def _t_scraper(scraper: Scraper):
     debug(f"[{scraper.name}] {remaining_secs:2.1f} seconds remaining until next scrape")
 
     while scraper.keep_alive():
+        start_time = time()
         scraper.scrape()
+        end_time = time()
 
         # Sleep & check if we need to loop
-        scraper.event_wait(Scraper.SCRAPE_INTERVAL_S)
+        if end_time - start_time < Scraper.SCRAPE_INTERVAL_S:
+            debug(f"[{scraper.name}] Scraping took {end_time - start_time:.2f} seconds")
+            scraper.event_wait(Scraper.SCRAPE_INTERVAL_S)
+        else:
+            warn(f"[{scraper.name}] Scraping took too long to complete. Looping!")
+        # end if
     # end def
 
     debug(f"[{scraper.name}] Thread is dying")

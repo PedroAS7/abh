@@ -161,17 +161,6 @@ async def _manage_alerts(alerts: list[ScrapeResult],
     max_intensity_alert: ScrapeResult | None = None
     max_flare_class_alert: ScrapeResult | None = None
 
-    # If most recent alert is outside of trigger levels, we'll remove the currently-set alerts
-    most_recent = alerts[-1]
-
-    if most_recent.flare_class < chat.settings.min_flare_class:
-        chat.settings.active_flare_alert = None
-    # endif
-
-    if most_recent.intensity < chat.settings.min_geomag_value:
-        chat.settings.active_intensity_alert = None
-    # endif
-
     for alert in alerts:
 
         # Not strong enough to trigger
@@ -182,7 +171,7 @@ async def _manage_alerts(alerts: list[ScrapeResult],
 
         correct_hemisphere = (alert.hemisphere & chat.settings.northern_hemisphere == chat.settings.northern_hemisphere) \
                              or (
-                                         alert.hemisphere & chat.settings.southern_hemisphere == chat.settings.southern_hemisphere)
+                              alert.hemisphere & chat.settings.southern_hemisphere == chat.settings.southern_hemisphere)
 
         # We'll skip alerts that wouldn't trigger for the selected hemisphere
         if not correct_hemisphere:
@@ -206,6 +195,8 @@ async def _manage_alerts(alerts: list[ScrapeResult],
     # Check whether these alerts are worth notifying over or not
     max_intensity_alert = _get_next_geomag_alert(chat, max_intensity_alert)
     max_flare_class_alert = _get_next_flare_alert(chat, max_flare_class_alert)
+    chat.settings.active_flare_alert = None
+    chat.settings.active_intensity_alert = None
 
     if max_intensity_alert is not None or max_flare_class_alert is not None:
         await _trigger_alerts(max_intensity_alert,
@@ -243,13 +234,15 @@ async def _t_run_alerter(alerter: Alerter):
             recent_alerts = [alert for alert in alerts if alert.start_time.timestamp() >= _nowMinus5h]
             del alerts
 
-            # Sort by date, oldest to newest
-            recent_alerts = sorted(recent_alerts, key=lambda alert: alert.start_time.timestamp())
+            if len(recent_alerts):
+                # Sort by date, oldest to newest
+                recent_alerts = sorted(recent_alerts, key=lambda alert: alert.start_time.timestamp())
 
-            # Only iterate through non-muted chats
-            for chat in [chat for chat in alerter.app.chats if chat.settings.send_updates]:
-                await _manage_alerts(recent_alerts, chat, alerter.app)
-            # end for
+                # Only iterate through non-muted chats
+                for chat in [chat for chat in alerter.app.chats if chat.settings.send_updates]:
+                    await _manage_alerts(recent_alerts, chat, alerter.app)
+                # end for
+            # end if
         # end if
 
         alerter.event_wait(alerter.POOL_INTERVAL)

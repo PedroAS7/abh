@@ -67,7 +67,7 @@ class SolarFlareClass(ClassWithHelp, IntEnum):
     @staticmethod
     def round_to_val(value: float) -> 'SolarFlareClass':
         # Calculate corresponding class
-        log10_intensity = math.log10(value)
+        log10_intensity = math.log10(value) if value > 0 else SolarFlareClass.OTHER.value
         norm_intensity = math.floor(log10_intensity * 10)
 
         if norm_intensity < SolarFlareClass.lowest():

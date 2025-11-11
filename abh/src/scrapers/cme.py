@@ -1,5 +1,4 @@
 import json
-import math
 from datetime import datetime, timedelta, timezone
 from json import JSONDecodeError
 from urllib.request import urlopen
@@ -43,17 +42,16 @@ class NasaCcmcScraper(SpecializedScraper):
                 min_predicts = [pred["predictedMaxKpLowerRange"] or GeomagStormIndex.KP9.value for pred in
                                 latest_result["predictions"]]
 
-                result = ScrapeResult()
-                result._arrival_time = datetime.strptime(latest_result["arrivalTime"], "%Y-%m-%dT%H:%MZ")
-                result._start_time = datetime.strptime(latest_result["observedTime"], "%Y-%m-%dT%H:%MZ")
-                result._end_time = result.arrival_time
-                result._raw_geomag_intensity = latest_result["maxKP"]
-                result._geomag_intensity = GeomagStormIndex(int(math.floor(result._raw_geomag_intensity)))
-                result.attachments.append({
-                    "kpMax": GeomagStormIndex(int(max(max_predicts))),
-                    "kpMin": GeomagStormIndex(int(min(min_predicts)))
-                })
-                result._is_prediction = True
+                arrival_time = datetime.strptime(latest_result["arrivalTime"], "%Y-%m-%dT%H:%MZ")
+                result = ScrapeResult(arrival_time=datetime.strptime(latest_result["arrivalTime"], "%Y-%m-%dT%H:%MZ"),
+                                      start_time=datetime.strptime(latest_result["observedTime"], "%Y-%m-%dT%H:%MZ"),
+                                      end_time=arrival_time,
+                                      raw_geomag_intensity=latest_result["maxKP"],
+                                      attachments={
+                                          "kpMax": GeomagStormIndex(int(max(max_predicts))),
+                                          "kpMin": GeomagStormIndex(int(min(min_predicts)))
+                                      },
+                                      is_prediction=True)
                 results.append(result)
 
             except JSONDecodeError as e:

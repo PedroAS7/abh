@@ -18,17 +18,14 @@ MAGNETOSPHERE = "https://services.swpc.noaa.gov/images/animations/geospace/veloc
 
 
 def _get_attachments(scrape_time: datetime):
-    attachments = []
-
     # Add attachments. Images are generated every 5 minutes
     norm_date: datetime = scrape_time - timedelta(minutes=scrape_time.minute - (scrape_time.minute % 5))
-    attachments.append(MAGNETOSPHERE)
-    attachments.append(OVATION_NORTH.replace("{date}", norm_date.strftime("%Y-%m-%d_%H%M")))
-    attachments.append(OVATION_SOUTH.replace("{date}", norm_date.strftime("%Y-%m-%d_%H%M")))
 
-    return attachments
-
-
+    return {
+        "Magnetosphere": MAGNETOSPHERE,
+        "Ovation North": OVATION_NORTH.replace("{date}", norm_date.strftime("%Y-%m-%d_%H%M")),
+        "Ovation South": OVATION_SOUTH.replace("{date}", norm_date.strftime("%Y-%m-%d_%H%M"))
+    }
 # end def
 
 
@@ -74,16 +71,14 @@ class GfzPotsdamScraper(SpecializedScraper):
                     curr_forecast_time = forecast_time
                     # Create results
                     while curr_forecast_time < next_forecast_time:
-                        result = ScrapeResult()
-                        result._start_time = curr_forecast_time
-                        result._end_time = curr_forecast_time + timedelta(minutes=Scraper.SCRAPE_INTERVAL)
-                        result._is_prediction = False
-                        result._raw_geomag_intensity = float(k)
-                        result._geomag_intensity = GeomagStormIndex(int(result._raw_geomag_intensity))
-                        result._attachments.extend(_get_attachments(curr_forecast_time))
+                        result = ScrapeResult(start_time=curr_forecast_time,
+                                              end_time=curr_forecast_time + timedelta(minutes=Scraper.SCRAPE_INTERVAL),
+                                              is_prediction=False,
+                                              raw_geomag_intensity=float(k),
+                                              attachments=_get_attachments(curr_forecast_time))
 
                         # Add scraping interval
-                        curr_forecast_time = result._end_time
+                        curr_forecast_time = result.end_time
                         results.append(result)
                     # end while
                 # end for
@@ -134,7 +129,7 @@ class NoaaPlanetaryKScraper(SpecializedScraper):
                     result._geomag_intensity = GeomagStormIndex(max(planetary_ks,
                                                                     key=lambda planetary_k: planetary_k["kp_index"])[
                                                                     "kp_index"])
-                    result._attachments.extend(_get_attachments(time_tag))
+                    result.attachments.update(_get_attachments(time_tag))
                     results.append(result)
                 # end for
 

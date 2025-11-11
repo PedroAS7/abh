@@ -4,9 +4,9 @@ from json import JSONDecodeError
 from ssl import SSLContext
 from urllib.request import urlopen
 from zoneinfo import ZoneInfo
+from http.client import IncompleteRead
 
-from abh.src.consts import SolarFlareClass
-from abh.src.log import error
+from abh.src.log import error, warn
 from abh.src.scrapers.scraper import Scraper, SpecializedScraper, ScrapeResult
 
 
@@ -30,13 +30,11 @@ class NoaaFlareScraper(SpecializedScraper):
             short_range = scrape_data[0]
             long_range = scrape_data[1]
 
-            result = ScrapeResult()
             time_tag = datetime.strptime(short_range["time_tag"], "%Y-%m-%dT%H:%M:%SZ")
-            result._start_time = time_tag
-            result._end_time = time_tag + timedelta(minutes=Scraper.SCRAPE_INTERVAL)
             max_intensity = max(short_range["observed_flux"], long_range["observed_flux"])
-            result._raw_flare_class = max_intensity
-            result._flare_class = SolarFlareClass.round_to_val(max_intensity)
+            result = ScrapeResult(start_time=time_tag,
+                                  end_time=time_tag + timedelta(minutes=Scraper.SCRAPE_INTERVAL),
+                                  raw_flare_class=max_intensity)
 
             results.append(result)
         # end if
@@ -61,6 +59,8 @@ class NoaaFlareScraper(SpecializedScraper):
                 error(f"Specialized scraper '{self._name}' failed to decode endpoint: {e.msg}")
             except ValueError as e:
                 error(f"Specialized scraper '{self._name}' failed to scrape endpoint: {e}")
+            except IncompleteRead:
+                warn(f"Specialized scraper '{self._name}' failed to retrieve all data")
             # end try
         # end if
 
