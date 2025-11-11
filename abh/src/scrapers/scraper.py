@@ -262,11 +262,6 @@ class Scraper(ManagedThread):
 
     # end def
 
-    def get_new(self) -> list[ScrapeResult]:
-        return list()
-
-    # end def
-
     def _append_specialized_scraper(self, scraper: SpecializedScraper) -> None:
         self._specialized_scrapers.append(scraper)
 
@@ -377,7 +372,6 @@ def _t_scraper(scraper: Scraper):
     # Synch with next sharp minute
     remaining_secs = time() % 60
     debug(f"[{scraper.name}] {remaining_secs:2.1f} seconds remaining until next scrape")
-    keep_alive = not scraper.event_wait(remaining_secs)
 
     while scraper.keep_alive():
         scraper.scrape()
