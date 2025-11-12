@@ -1,3 +1,4 @@
+import threading
 from sys import platform
 from threading import Lock
 
@@ -31,8 +32,9 @@ def log(*what: object,
         sep: str | None = " ",
         end: str | None = "\n") -> None:
     indent_str = '\t' * _indent_level if _indent_level > 0 else ''
+    curr_thread = threading.current_thread()
     with _log_lock:
-        print(fore, back, style, indent_str, *what, Style.RESET_ALL, sep=sep, end=end)
+        print(fore, back, style, indent_str, f"[{curr_thread.name}]", *what, Style.RESET_ALL, sep=sep, end=end)
     # end with
 
 

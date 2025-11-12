@@ -27,6 +27,7 @@ class ManagedThread:
 
         self._thread_evt.clear()
         self._thread = threading.Thread(target=t_func, args=[self])
+        self._thread.name = self._name
         self._thread.start()
         self._running = True
         debug(f"Thread '{self._name}' started")
