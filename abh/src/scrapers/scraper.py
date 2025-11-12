@@ -245,7 +245,7 @@ class Scraper(ManagedThread):
                         break
                     # end if
                 # end for
-                debug("Skipping {result_count - earlier_to_new_results_i} / {result_count} results")
+                debug(f"Skipping {result_count - earlier_to_new_results_i} / {result_count} results")
             # end if
 
             for result in results[earlier_to_new_results_i:]:
