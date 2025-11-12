@@ -12,19 +12,16 @@ from abh.src.scrapers.scraper import (Scraper,
                                       SpecializedScraper,
                                       ScrapeResult)
 
-OVATION_NORTH = "https://services.swpc.noaa.gov/images/animations/ovation/north/aurora_N_{date}.jpg"
-OVATION_SOUTH = "https://services.swpc.noaa.gov/images/animations/ovation/south/aurora_S_{date}.jpg"
+OVATION_NORTH = "https://services.swpc.noaa.gov/images/animations/ovation/north/latest.jpg"
+OVATION_SOUTH = "https://services.swpc.noaa.gov/images/animations/ovation/south/latest.jpg"
 MAGNETOSPHERE = "https://services.swpc.noaa.gov/images/animations/geospace/velocity/latest.png"
 
 
-def _get_attachments(scrape_time: datetime):
-    # Add attachments. Images are generated every 5 minutes
-    norm_date: datetime = scrape_time - timedelta(minutes=scrape_time.minute - (scrape_time.minute % 5))
-
+def _get_attachments() -> dict[str, str]:
     return {
         "Magnetosphere": MAGNETOSPHERE,
-        "Ovation North": OVATION_NORTH.replace("{date}", norm_date.strftime("%Y-%m-%d_%H%M")),
-        "Ovation South": OVATION_SOUTH.replace("{date}", norm_date.strftime("%Y-%m-%d_%H%M"))
+        "Ovation North": OVATION_NORTH,
+        "Ovation South": OVATION_SOUTH
     }
 # end def
 
@@ -75,7 +72,7 @@ class GfzPotsdamScraper(SpecializedScraper):
                                               end_time=curr_forecast_time + timedelta(minutes=Scraper.SCRAPE_INTERVAL),
                                               is_prediction=False,
                                               raw_geomag_intensity=float(k),
-                                              attachments=_get_attachments(curr_forecast_time))
+                                              attachments=_get_attachments())
 
                         # Add scraping interval
                         curr_forecast_time = result.end_time
@@ -117,19 +114,14 @@ class NoaaPlanetaryKScraper(SpecializedScraper):
                 result_json = json.loads(scrape_data.read())
 
                 for json_i in range(0, len(result_json), int(Scraper.SCRAPE_INTERVAL)):
-                    result = ScrapeResult()
                     planetary_ks = result_json[json_i: json_i + int(Scraper.SCRAPE_INTERVAL)]
                     time_tag = datetime.strptime(planetary_ks[0]["time_tag"], "%Y-%m-%dT%H:%M:%S")
                     time_tag = time_tag.astimezone(self._scrape_tz)
-                    result._start_time = time_tag
-                    result._end_time = time_tag + timedelta(minutes=Scraper.SCRAPE_INTERVAL)
-                    result._raw_geomag_intensity = max(planetary_ks,
-                                                       key=lambda planetary_k: planetary_k["estimated_kp"])[
-                        "estimated_kp"]
-                    result._geomag_intensity = GeomagStormIndex(max(planetary_ks,
-                                                                    key=lambda planetary_k: planetary_k["kp_index"])[
-                                                                    "kp_index"])
-                    result.attachments.update(_get_attachments(time_tag))
+                    result = ScrapeResult(start_time=time_tag,
+                                          end_time=time_tag + timedelta(minutes=Scraper.SCRAPE_INTERVAL),
+                                          is_prediction=False,
+                                          raw_geomag_intensity=max(planetary_ks, key=lambda planetary_k: planetary_k["estimated_kp"])["estimated_kp"],
+                                          attachments=_get_attachments())
                     results.append(result)
                 # end for
 
