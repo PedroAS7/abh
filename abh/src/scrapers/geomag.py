@@ -5,8 +5,8 @@ from json import JSONDecodeError
 from ssl import SSLContext
 from urllib.request import urlopen
 from zoneinfo import ZoneInfo
+from time import time
 
-from abh.src.consts import GeomagStormIndex
 from abh.src.log import error
 from abh.src.scrapers.scraper import (Scraper,
                                       SpecializedScraper,
@@ -18,10 +18,11 @@ MAGNETOSPHERE = "https://services.swpc.noaa.gov/images/animations/geospace/veloc
 
 
 def _get_attachments() -> dict[str, str]:
+    curr_time = time()
     return {
-        "Magnetosphere": MAGNETOSPHERE,
-        "Ovation North": OVATION_NORTH,
-        "Ovation South": OVATION_SOUTH
+        "Magnetosphere": f"{MAGNETOSPHERE}?avoid_cache={int(time())}",
+        "Ovation North": f"{OVATION_NORTH}?avoid_cache={int(time())}",
+        "Ovation South": f"{OVATION_SOUTH}?avoid_cache={int(time())}"
     }
 # end def
 
