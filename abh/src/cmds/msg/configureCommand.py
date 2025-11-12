@@ -94,7 +94,9 @@ class ConfigureMsgCommand(BotCommand):
                 raise KeyError()
             # end if
 
+            # Remove current alert and set new class
             chosen_class: SolarFlareClass = SolarFlareClass[args[0]]
+            chat.settings.active_flare_alert = None
             chat.settings.min_flare_class = chosen_class
             await update.effective_message.chat.send_message(f"{Emojis.OK.value} Flare class trigger set")
         except KeyError:
@@ -133,7 +135,9 @@ class ConfigureMsgCommand(BotCommand):
                 raise KeyError()
             # end if
 
+            # Remove current alert and set new class
             chosen_intensity: GeomagStormIndex = GeomagStormIndex[args[0]]
+            chat.settings.active_intensity_alert = None
             chat.settings.min_geomag_value = chosen_intensity
             await update.effective_message.chat.send_message(f"{Emojis.OK.value} Geomagnetic intensity trigger set")
         except KeyError:
