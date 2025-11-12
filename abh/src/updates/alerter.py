@@ -92,7 +92,7 @@ A solar storm has reached Earth
 
         if len(max_intensity_alert.attachments):
             loop.run_until_complete(message.reply_media_group(
-                [InputMediaPhoto(attachment) for attachment in max_intensity_alert.attachments if
+                [InputMediaPhoto(attachment) for attachment in max_intensity_alert.attachments.values() if
                  isinstance(attachment, str)],
                 disable_notification=False))
         # end if
@@ -129,6 +129,9 @@ def _get_next_geomag_alert(chat, selected_alert):
     active_alert = chat.settings.active_intensity_alert
     if active_alert is not None and selected_alert.intensity <= active_alert.intensity:
         return None
+    # Or if the new alert is not strong enough to trigger
+    elif active_alert is None and selected_alert.intensity <= chat.settings.min_geomag_value:
+        return None
     # end for
 
     return selected_alert
@@ -146,6 +149,9 @@ def _get_next_flare_alert(chat, selected_alert):
     # If the currently-set alert is stronger than this one, no alert is triggered
     active_alert = chat.settings.active_flare_alert
     if active_alert is not None and selected_alert.flare_class <= active_alert.intensity:
+        return None
+    # Or if the new alert is not strong enough to trigger
+    elif active_alert is None and selected_alert.flare_class <= chat.settings.min_flare_class:
         return None
     # end for
 
@@ -165,7 +171,7 @@ async def _manage_alerts(alerts: list[ScrapeResult],
 
         # Not strong enough to trigger
         if alert.intensity < chat.settings.min_geomag_value \
-                or alert.flare_class < chat.settings.min_flare_class:
+                and alert.flare_class < chat.settings.min_flare_class:
             continue
         # end if
 
@@ -198,6 +204,7 @@ async def _manage_alerts(alerts: list[ScrapeResult],
     chat.settings.active_flare_alert = None
     chat.settings.active_intensity_alert = None
 
+    debug(f"For chat {chat.uid}, alerts are: intensity {max_intensity_alert.id if max_intensity_alert else 'None'}, flare {max_flare_class_alert.id if max_flare_class_alert else 'None'}")
     if max_intensity_alert is not None or max_flare_class_alert is not None:
         await _trigger_alerts(max_intensity_alert,
                               max_flare_class_alert,
@@ -237,6 +244,7 @@ async def _t_run_alerter(alerter: Alerter):
             if len(recent_alerts):
                 # Sort by date, oldest to newest
                 recent_alerts = sorted(recent_alerts, key=lambda alert: alert.start_time.timestamp())
+                debug(f"Number of recent alerts: {len(recent_alerts)}")
 
                 # Only iterate through non-muted chats
                 for chat in [chat for chat in alerter.app.chats if chat.settings.send_updates]:
