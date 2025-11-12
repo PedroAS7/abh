@@ -174,7 +174,7 @@ class Scraper(ManagedThread):
 
             self._results.extend(loaded_list)
         # end with
-        log(f"[{self.name}] Loaded scrape history")
+        log("Loaded scrape history")
 
     # end def
 
@@ -191,12 +191,12 @@ class Scraper(ManagedThread):
         # end with
 
         self._results_cond.release()
-        log(f"[{self.name}] Saved scrape history")
+        log(f"Saved scrape history for {self.name}")
 
     # end def
 
     def scrape(self):
-        debug(f"[{self.name}] Scrape started")
+        debug("Scrape started")
         for scraper in self._specialized_scrapers:
             self._append_result(scraper.scrape())
         # end for
@@ -209,7 +209,7 @@ class Scraper(ManagedThread):
             # end if
         # end for
 
-        debug(f"[{self.name}] Scrape finished")
+        debug("Scrape finished")
 
     # end def
 
@@ -245,7 +245,7 @@ class Scraper(ManagedThread):
                         break
                     # end if
                 # end for
-                debug(f"[{self.name}] Skipping {result_count - earlier_to_new_results_i} / {result_count} results")
+                debug("Skipping {result_count - earlier_to_new_results_i} / {result_count} results")
             # end if
 
             for result in results[earlier_to_new_results_i:]:
@@ -351,7 +351,7 @@ def _t_scraper(scraper: Scraper):
 
     # Synch with next sharp minute
     remaining_secs = time() % 60
-    debug(f"[{scraper.name}] {remaining_secs:2.1f} seconds remaining until next scrape")
+    debug(f"{remaining_secs:2.1f} seconds remaining until next scrape")
 
     while scraper.keep_alive():
         start_time = time()
@@ -360,12 +360,12 @@ def _t_scraper(scraper: Scraper):
 
         # Sleep & check if we need to loop
         if end_time - start_time < Scraper.SCRAPE_INTERVAL_S:
-            debug(f"[{scraper.name}] Scraping took {end_time - start_time:.2f} seconds")
+            debug(f"Scraping took {end_time - start_time:.2f} seconds")
             scraper.event_wait(Scraper.SCRAPE_INTERVAL_S)
         else:
-            warn(f"[{scraper.name}] Scraping took too long to complete. Looping!")
+            warn(f"Scraping took too long to complete. Looping!")
         # end if
     # end def
 
-    debug(f"[{scraper.name}] Thread is dying")
+    debug(f"Thread is dying")
 # end def
