@@ -1,4 +1,5 @@
 import threading
+from io import BufferedWriter
 from sys import platform
 from threading import Lock
 
@@ -19,11 +20,30 @@ if platform.startswith("win"):
 _indent_level = 0
 _indent_max = 5
 _log_lock = Lock()
+_log_file: BufferedWriter | None = None
 
 
 # --
 # Functions
 # --
+
+def start_logging(log_file: str):
+    global _log_file
+    if _log_file:
+        _log_file.close()
+    # end if
+
+    _log_file = open(log_file, 'a')
+# end def
+
+
+def stop_logging():
+    global _log_file
+    if _log_file:
+        _log_file.close()
+    # end if
+# end def
+
 
 def log(*what: object,
         fore: Fore = Fore.RESET,
@@ -35,6 +55,10 @@ def log(*what: object,
     curr_thread = threading.current_thread()
     with _log_lock:
         print(fore, back, style, indent_str, f"[{curr_thread.name}]", *what, Style.RESET_ALL, sep=sep, end=end)
+        if _log_file:
+            # noinspection PyTypeChecker
+            _log_file.write(f"[{curr_thread.name}] " + ' '.join(what) + '\n')
+        # end if
     # end with
 
 

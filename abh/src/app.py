@@ -32,14 +32,17 @@ from abh.src.updates.messageReceiveParser import TelegramMessageReceiveParser
 from abh.src.updates.parser import TelegramUpdateParser
 
 
+_DB_FOLDER = "data"
+_DB_FILENAME = join(_DB_FOLDER, "chats.bin")
+_LOG_FILENAME = join(_DB_FOLDER, "log.txt")
+
+
 # --
 # Classes
 # --
 
 
 class BotApp:
-    _DB_FOLDER = "data"
-    _DB_FILENAME = join(_DB_FOLDER, "chats.bin")
     _APP = None
 
     def __init__(self) -> None:
@@ -104,11 +107,11 @@ class BotApp:
     # end def
 
     def write(self) -> None:
-        if not exists(self._DB_FOLDER):
-            mkdir(self._DB_FOLDER)
+        if not exists(_DB_FOLDER):
+            mkdir(_DB_FOLDER)
         # end if
 
-        with open(BotApp._DB_FILENAME, "wb") as db_file:
+        with open(_DB_FILENAME, "wb") as db_file:
             pickle.dump(self.chats, db_file)
         # end with
 
@@ -164,12 +167,12 @@ class BotApp:
         BotApp._APP = BotApp()
 
         # Fresh start
-        if not exists(BotApp._DB_FILENAME):
+        if not exists(_DB_FILENAME):
             return
         # end if
 
         read_chat_list = None
-        with open(BotApp._DB_FILENAME, "rb") as db_file:
+        with open(_DB_FILENAME, "rb") as db_file:
             read_chat_list = pickle.load(db_file)
             if not isinstance(read_chat_list, list):
                 raise ValueError("Invalid bot DB file")
@@ -233,6 +236,7 @@ def raise_exception() -> None:
 
 
 def run() -> None:
+    start_logging(_LOG_FILENAME)
     log("ABH - Aurora Borealis Hunterus bot")
     log("(Also known as C\xe9line.bot)")
     log("")
@@ -290,5 +294,6 @@ def run() -> None:
     finally:
         graceful_stop(threads, bot_loop)
         log("App stopped. Goodbye!")
+        stop_logging()
     # end try
 # end def
