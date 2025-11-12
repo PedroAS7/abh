@@ -1,5 +1,4 @@
 import datetime
-from asyncio import get_event_loop
 
 from telegram import InputMediaPhoto
 from telegram.constants import ParseMode
@@ -33,7 +32,7 @@ def _sanitize_markdown(text: str) -> str:
 
 
 class Alerter(ManagedThread):
-    POOL_INTERVAL = 60  # 1 minute
+    POOL_INTERVAL = 30  # 1 minute
 
     def __init__(self, bot_app, loop):
         self.loop = loop
@@ -61,7 +60,6 @@ async def _trigger_alerts(max_intensity_alert: ScrapeResult,
                           chat: Chat,
                           app):
     bot = app.bot_user.get_bot()
-    loop = get_event_loop()
 
     if max_intensity_alert:
         chat.settings.active_intensity_alert = max_intensity_alert
@@ -73,7 +71,7 @@ async def _trigger_alerts(max_intensity_alert: ScrapeResult,
 A solar storm is approaching Earth
 *Potential intensity (KP):* {max_intensity_alert.raw_geomag_intensity} (forecast min: {max_intensity_alert.attachments[0]['kpMin']}, max: {max_intensity_alert.attachments[0]['kpMax']})
 *ETA:* {max_intensity_alert.arrival_time.strftime("%c")}
-*Detection time*: {max_intensity_alert.start_time.strftime("%c")}
+*Detection time*: {max_intensity_alert.scrape_time.strftime("%c")}
             """
         else:
             message_text = f"""
@@ -81,7 +79,7 @@ A solar storm is approaching Earth
 
 A solar storm has reached Earth
 *Intensity (KP):* {max_intensity_alert.raw_geomag_intensity}
-*Detection time*: {max_intensity_alert.start_time.strftime("%c")} UTC
+*Detection time*: {max_intensity_alert.scrape_time.strftime("%c")} UTC
             """
         # end if
 
@@ -91,10 +89,10 @@ A solar storm has reached Earth
                                          disable_notification=False)
 
         if len(max_intensity_alert.attachments):
-            loop.run_until_complete(message.reply_media_group(
+            await message.reply_media_group(
                 [InputMediaPhoto(attachment) for attachment in max_intensity_alert.attachments.values() if
                  isinstance(attachment, str)],
-                disable_notification=False))
+                disable_notification=False)
         # end if
     # end if
 
@@ -148,7 +146,7 @@ def _get_next_flare_alert(chat, selected_alert):
 
     # If the currently-set alert is stronger than this one, no alert is triggered
     active_alert = chat.settings.active_flare_alert
-    if active_alert is not None and selected_alert.flare_class <= active_alert.intensity:
+    if active_alert is not None and selected_alert.flare_class <= active_alert.flare_class:
         return None
     # Or if the new alert is not strong enough to trigger
     elif active_alert is None and selected_alert.flare_class <= chat.settings.min_flare_class:
@@ -199,20 +197,24 @@ async def _manage_alerts(alerts: list[ScrapeResult],
     # end for
 
     # Check whether these alerts are worth notifying over or not
-    max_intensity_alert = _get_next_geomag_alert(chat, max_intensity_alert)
-    max_flare_class_alert = _get_next_flare_alert(chat, max_flare_class_alert)
-    chat.settings.active_flare_alert = None
-    chat.settings.active_intensity_alert = None
+    geomag_alert_candidate = _get_next_geomag_alert(chat, max_intensity_alert)
+    flares_alert_candidate = _get_next_flare_alert(chat, max_flare_class_alert)
 
-    debug(f"For chat {chat.uid}, alerts are: intensity {max_intensity_alert.id if max_intensity_alert else 'None'}, flare {max_flare_class_alert.id if max_flare_class_alert else 'None'}")
-    if max_intensity_alert is not None or max_flare_class_alert is not None:
-        await _trigger_alerts(max_intensity_alert,
-                              max_flare_class_alert,
-                              chat,
-                              app)
+    debug(f"For chat {chat.uid}, alerts are: intensity {geomag_alert_candidate.id if geomag_alert_candidate else 'None'}, flare {flares_alert_candidate.id if flares_alert_candidate else 'None'}")
+    await _trigger_alerts(geomag_alert_candidate,
+                          flares_alert_candidate,
+                          chat,
+                          app)
+
+    # Current geomagnitude alert candidate is below threshold. Reset alert
+    if max_intensity_alert and chat.settings.min_geomag_value > max_intensity_alert.intensity:
+        chat.settings.active_intensity_alert = None
     # end if
 
-
+    # Current flare alert candidate is below threshold. Reset alert
+    if max_flare_class_alert and chat.settings.min_flare_class > max_flare_class_alert.flare_class:
+        chat.settings.active_flare_alert = None
+    # end if
 # end def
 
 
