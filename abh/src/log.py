@@ -1,4 +1,5 @@
 from sys import platform
+from threading import Lock
 
 from colorama import Back
 from colorama import Fore
@@ -16,6 +17,7 @@ if platform.startswith("win"):
 
 _indent_level = 0
 _indent_max = 5
+_log_lock = Lock()
 
 
 # --
@@ -29,7 +31,9 @@ def log(*what: object,
         sep: str | None = " ",
         end: str | None = "\n") -> None:
     indent_str = '\t' * _indent_level if _indent_level > 0 else ''
-    print(fore, back, style, indent_str, *what, Style.RESET_ALL, sep=sep, end=end)
+    with _log_lock:
+        print(fore, back, style, indent_str, *what, Style.RESET_ALL, sep=sep, end=end)
+    # end with
 
 
 # end def
